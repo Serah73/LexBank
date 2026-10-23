@@ -1,9 +1,19 @@
-name: ci
+name: backend
 
 on:
   push:
     branches: [main]
+    paths:
+      - src/backend/**
+      - tests/backend/**
+      - LexBank.sln
+      - .github/workflows/backend.yml
   pull_request:
+    paths:
+      - src/backend/**
+      - tests/backend/**
+      - LexBank.sln
+      - .github/workflows/backend.yml
 
 jobs:
   backend:
