@@ -1,10 +1,12 @@
 name: release
 
 on:
-  workflow_run:
-    workflows: [backend]
-    types: [completed]
+  push:
     branches: [main]
+    paths:
+      - src/backend/**
+      - tests/backend/**
+      - LexBank.sln
   workflow_dispatch:
     inputs:
       version:
@@ -16,15 +18,11 @@ permissions:
 
 jobs:
   release:
-    if: >-
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Resolve tag
         id: tag
