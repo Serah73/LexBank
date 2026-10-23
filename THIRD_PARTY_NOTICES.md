@@ -1,13 +1,13 @@
 # Third-party notices
 
-Este repositorio está bajo licencia CC BY-NC-SA 4.0, salvo el material de terceros listado a continuación, que conserva su licencia original.
+This repository is licensed under CC BY-NC-SA 4.0, except for the third-party material listed below, which retains its original license.
 
 ## hola-ai
 
-- Fuente: https://github.com/nschurmann/hola-ai
-- Autor: Nicolas Schurmann
-- Licencia: MIT
-- Material incluido: skills `/backlog`, `/story` y `/pair` (carpeta `skills/`)
+- Source: https://github.com/nschurmann/hola-ai
+- Author: Nicolas Schurmann
+- License: MIT
+- Included material: skills `/backlog`, `/story` and `/pair` (`skills/` folder)
 
 ```
 MIT License
