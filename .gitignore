@@ -1,6 +1,10 @@
 # Created by https://www.toptal.com/developers/gitignore/api/jetbrains,webstorm,dotnetcore,react,reactnative,visualstudiocode,visualstudio
 # Edit at https://www.toptal.com/developers/gitignore?templates=jetbrains,webstorm,dotnetcore,react,reactnative,visualstudiocode,visualstudio
 
+### Claude ###
+# All skills used in this project are copied to the root-level skills/ directory so they are publicly visible
+.claude/**
+
 ### DotnetCore ###
 # .NET Core build folders
 bin/
