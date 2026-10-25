@@ -28,6 +28,19 @@ It is intended for family use, run locally, not as a public service.
 - **Language:** all repository text (code, comments, docs, ADRs, commit messages) is in English. Keep Spanish only where it refers to a Spanish-language origin (proper names, external sources).
 - **Dependency rule:** Domain references nothing; Application references Domain; Infrastructure references Application; Api references Application and Infrastructure.
 - **Minimal viable:** do not add packages, files, configuration or abstractions that were not requested.
+- **TDD (Test-Driven Development):** write a failing test first, then the minimum code to make it pass, then refactor (red, green, refactor). No production code without a test that requires it.
+
+## SOLID principles
+
+All code generated, refactored or reviewed must strictly follow the SOLID principles of object-oriented design and clean architecture:
+
+- **S - Single Responsibility Principle:** each class, module or function must have one, and only one, reason to change. Avoid monolithic classes (*God Objects*) that mix business logic, persistence or presentation.
+- **O - Open/Closed Principle:** software entities must be open for extension but closed for modification. Prefer abstractions, interfaces and polymorphism to add new functionality without changing existing code.
+- **L - Liskov Substitution Principle:** derived classes must be fully substitutable for their base classes without changing the expected behavior of the program. Subclasses must respect the contracts, preconditions and postconditions defined by the abstraction.
+- **I - Interface Segregation Principle:** prefer several small, specific interfaces over a single general-purpose one. No client should be forced to depend on methods it does not use.
+- **D - Dependency Inversion Principle:** high-level modules must not depend on low-level modules; both must depend on abstractions. Use dependency injection to decouple concrete implementations and make unit testing easier.
+
+Apply SOLID to the code the current story needs; introduce an abstraction when there is a concrete reason (dependency rule, testability, or a second implementation), not in anticipation.
 
 ## Commands
 
