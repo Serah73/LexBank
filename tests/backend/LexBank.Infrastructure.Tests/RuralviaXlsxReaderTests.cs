@@ -1,3 +1,5 @@
+using ClosedXML.Excel;
+using LexBank.Application;
 using LexBank.Domain;
 using LexBank.Infrastructure;
 
@@ -53,5 +55,23 @@ public class RuralviaXlsxReaderTests
         var result = new RuralviaXlsxReader().Read(stream);
 
         Assert.Contains(new FailedRow(10, "Invalid balance"), result.FailedRows);
+    }
+
+    [Fact]
+    public void Read_XlsxWithoutRuralviaHeader_FailsWithNotRuralviaReason()
+    {
+        using var stream = new MemoryStream();
+        using (var workbook = new XLWorkbook())
+        {
+            var sheet = workbook.AddWorksheet("other");
+            sheet.Cell(4, 1).Value = "Date";
+            sheet.Cell(4, 2).Value = "Amount";
+            workbook.SaveAs(stream);
+        }
+        stream.Position = 0;
+
+        var exception = Assert.Throws<UnsupportedStatementException>(() => new RuralviaXlsxReader().Read(stream));
+
+        Assert.Equal("The file is not a Ruralvía XLSX statement", exception.Message);
     }
 }
