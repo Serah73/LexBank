@@ -14,10 +14,15 @@ public class RuralviaXlsxReader
         var sheet = workbook.Worksheet(1);
         var transactions = new List<Transaction>();
 
+        var failedRows = new List<FailedRow>();
+
         foreach (var row in sheet.RowsUsed().Where(r => r.RowNumber() >= FirstDataRow))
         {
-            if (row.Cell(1).TryGetValue<DateTime>(out var date)
-                && row.Cell(4).TryGetValue<decimal>(out var amount)
+            if (!row.Cell(1).TryGetValue<DateTime>(out var date))
+            {
+                failedRows.Add(new FailedRow(row.RowNumber(), "Invalid date"));
+            }
+            else if (row.Cell(4).TryGetValue<decimal>(out var amount)
                 && row.Cell(5).TryGetValue<decimal>(out var balance))
             {
                 transactions.Add(new Transaction(
@@ -25,6 +30,6 @@ public class RuralviaXlsxReader
             }
         }
 
-        return new StatementReadResult(transactions);
+        return new StatementReadResult(transactions, failedRows);
     }
 }

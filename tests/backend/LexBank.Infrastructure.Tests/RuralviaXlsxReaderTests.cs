@@ -24,4 +24,24 @@ public class RuralviaXlsxReaderTests
             },
             result.Transactions);
     }
+
+    [Fact]
+    public void Read_RowWithInvalidDate_ReturnsFailedRowWithRowNumberAndReason()
+    {
+        using var stream = OpenFixture();
+
+        var result = new RuralviaXlsxReader().Read(stream);
+
+        Assert.Contains(new FailedRow(8, "Invalid date"), result.FailedRows);
+    }
+
+    [Fact]
+    public void Read_RowWithInvalidAmount_ReturnsFailedRowWithRowNumberAndReason()
+    {
+        using var stream = OpenFixture();
+
+        var result = new RuralviaXlsxReader().Read(stream);
+
+        Assert.Contains(new FailedRow(9, "Invalid amount"), result.FailedRows);
+    }
 }
