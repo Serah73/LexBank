@@ -22,8 +22,11 @@ public class RuralviaXlsxReader
             {
                 failedRows.Add(new FailedRow(row.RowNumber(), "Invalid date"));
             }
-            else if (row.Cell(4).TryGetValue<decimal>(out var amount)
-                && row.Cell(5).TryGetValue<decimal>(out var balance))
+            else if (!row.Cell(4).TryGetValue<decimal>(out var amount))
+            {
+                failedRows.Add(new FailedRow(row.RowNumber(), "Invalid amount"));
+            }
+            else if (row.Cell(5).TryGetValue<decimal>(out var balance))
             {
                 transactions.Add(new Transaction(
                     DateOnly.FromDateTime(date), row.Cell(3).GetString(), amount, "EUR", balance));
