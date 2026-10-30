@@ -71,7 +71,7 @@ public class StatementsEndpointTests : IClassFixture<WebApplicationFactory<Progr
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        Assert.Equal("The file is not a Ruralvía XLSX statement", body.RootElement.GetProperty("error").GetString());
+        Assert.Equal("NotRuralviaStatement", body.RootElement.GetProperty("error").GetString());
         Assert.False(body.RootElement.TryGetProperty("transactions", out _));
     }
 }

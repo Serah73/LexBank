@@ -27,9 +27,9 @@ app.MapPost("/api/statements", (IFormFile file, IStatementReader reader) =>
     {
         return Results.Ok(reader.Read(stream));
     }
-    catch (UnsupportedStatementException exception)
+    catch (UnsupportedStatementException)
     {
-        return Results.BadRequest(new { error = exception.Message });
+        return Results.BadRequest(new { error = "NotRuralviaStatement" });
     }
 }).DisableAntiforgery();
 
