@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LexBank.Domain.Tests", "tes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LexBank.Infrastructure.Tests", "tests\backend\LexBank.Infrastructure.Tests\LexBank.Infrastructure.Tests.csproj", "{2B4706F6-5074-49E1-8357-A0C020DBC0C6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LexBank.Api.Tests", "tests\backend\LexBank.Api.Tests\LexBank.Api.Tests.csproj", "{1C148B6A-D399-437F-A581-7A64200C58B0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -105,6 +107,18 @@ Global
 		{2B4706F6-5074-49E1-8357-A0C020DBC0C6}.Release|x64.Build.0 = Release|Any CPU
 		{2B4706F6-5074-49E1-8357-A0C020DBC0C6}.Release|x86.ActiveCfg = Release|Any CPU
 		{2B4706F6-5074-49E1-8357-A0C020DBC0C6}.Release|x86.Build.0 = Release|Any CPU
+		{1C148B6A-D399-437F-A581-7A64200C58B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C148B6A-D399-437F-A581-7A64200C58B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C148B6A-D399-437F-A581-7A64200C58B0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1C148B6A-D399-437F-A581-7A64200C58B0}.Debug|x64.Build.0 = Debug|Any CPU
+		{1C148B6A-D399-437F-A581-7A64200C58B0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1C148B6A-D399-437F-A581-7A64200C58B0}.Debug|x86.Build.0 = Debug|Any CPU
+		{1C148B6A-D399-437F-A581-7A64200C58B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C148B6A-D399-437F-A581-7A64200C58B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C148B6A-D399-437F-A581-7A64200C58B0}.Release|x64.ActiveCfg = Release|Any CPU
+		{1C148B6A-D399-437F-A581-7A64200C58B0}.Release|x64.Build.0 = Release|Any CPU
+		{1C148B6A-D399-437F-A581-7A64200C58B0}.Release|x86.ActiveCfg = Release|Any CPU
+		{1C148B6A-D399-437F-A581-7A64200C58B0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -118,5 +132,6 @@ Global
 		{C62EED4C-2AC9-F50F-E0BC-649CFEA98BDB} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{550CC77C-9265-4643-9959-6DB0504E424F} = {C62EED4C-2AC9-F50F-E0BC-649CFEA98BDB}
 		{2B4706F6-5074-49E1-8357-A0C020DBC0C6} = {C62EED4C-2AC9-F50F-E0BC-649CFEA98BDB}
+		{1C148B6A-D399-437F-A581-7A64200C58B0} = {C62EED4C-2AC9-F50F-E0BC-649CFEA98BDB}
 	EndGlobalSection
 EndGlobal

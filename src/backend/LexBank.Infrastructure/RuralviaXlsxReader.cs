@@ -4,7 +4,7 @@ using LexBank.Domain;
 
 namespace LexBank.Infrastructure;
 
-public class RuralviaXlsxReader
+public class RuralviaXlsxReader : IStatementReader
 {
     private const int HeaderRow = 4;
     private const int FirstDataRow = 5;

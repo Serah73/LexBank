@@ -1,7 +1,11 @@
+using LexBank.Application;
+using LexBank.Infrastructure;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<IStatementReader, RuralviaXlsxReader>();
 
 var app = builder.Build();
 
@@ -13,4 +17,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.MapPost("/api/statements", (IFormFile file, IStatementReader reader) =>
+{
+    using var stream = file.OpenReadStream();
+    return reader.Read(stream);
+}).DisableAntiforgery();
+
 app.Run();
+
+public partial class Program { }
