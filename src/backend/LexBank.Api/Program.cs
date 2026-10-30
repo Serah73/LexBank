@@ -20,7 +20,14 @@ app.UseHttpsRedirection();
 app.MapPost("/api/statements", (IFormFile file, IStatementReader reader) =>
 {
     using var stream = file.OpenReadStream();
-    return reader.Read(stream);
+    try
+    {
+        return Results.Ok(reader.Read(stream));
+    }
+    catch (UnsupportedStatementException exception)
+    {
+        return Results.BadRequest(new { error = exception.Message });
+    }
 }).DisableAntiforgery();
 
 app.Run();

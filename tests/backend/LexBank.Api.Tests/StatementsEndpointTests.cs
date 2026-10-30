@@ -58,4 +58,20 @@ public class StatementsEndpointTests : IClassFixture<WebApplicationFactory<Progr
             new[] { (8, "Invalid date"), (9, "Invalid amount"), (10, "Invalid balance") },
             failedRows);
     }
+
+    [Fact]
+    public async Task Upload_FileThatIsNotRuralviaXlsx_ReturnsBadRequestWithReasonAndNoTransactions()
+    {
+        using var content = new MultipartFormDataContent
+        {
+            { new ByteArrayContent("this is plain text, not a spreadsheet"u8.ToArray()), "file", "notes.txt" },
+        };
+
+        var response = await _client.PostAsync("/api/statements", content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("The file is not a Ruralvía XLSX statement", body.RootElement.GetProperty("error").GetString());
+        Assert.False(body.RootElement.TryGetProperty("transactions", out _));
+    }
 }
