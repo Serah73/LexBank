@@ -74,4 +74,14 @@ public class RuralviaXlsxReaderTests
 
         Assert.Equal("The file is not a Ruralvía XLSX statement", exception.Message);
     }
+
+    [Fact]
+    public void Read_FileThatIsNotXlsx_FailsWithNotRuralviaReason()
+    {
+        using var stream = new MemoryStream("this is plain text, not a spreadsheet"u8.ToArray());
+
+        var exception = Assert.Throws<UnsupportedStatementException>(() => new RuralviaXlsxReader().Read(stream));
+
+        Assert.Equal("The file is not a Ruralvía XLSX statement", exception.Message);
+    }
 }
