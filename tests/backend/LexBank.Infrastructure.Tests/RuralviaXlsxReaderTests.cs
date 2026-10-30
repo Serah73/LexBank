@@ -34,7 +34,7 @@ public class RuralviaXlsxReaderTests
 
         var result = new RuralviaXlsxReader().Read(stream);
 
-        Assert.Contains(new FailedRow(8, "Invalid date"), result.FailedRows);
+        Assert.Contains(new FailedRow(8, FailedRowReason.InvalidDate), result.FailedRows);
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public class RuralviaXlsxReaderTests
 
         var result = new RuralviaXlsxReader().Read(stream);
 
-        Assert.Contains(new FailedRow(9, "Invalid amount"), result.FailedRows);
+        Assert.Contains(new FailedRow(9, FailedRowReason.InvalidAmount), result.FailedRows);
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public class RuralviaXlsxReaderTests
 
         var result = new RuralviaXlsxReader().Read(stream);
 
-        Assert.Contains(new FailedRow(10, "Invalid balance"), result.FailedRows);
+        Assert.Contains(new FailedRow(10, FailedRowReason.InvalidBalance), result.FailedRows);
     }
 
     [Fact]

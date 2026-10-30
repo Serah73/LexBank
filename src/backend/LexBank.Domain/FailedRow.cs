@@ -1,3 +1,3 @@
 namespace LexBank.Domain;
 
-public record FailedRow(int RowNumber, string Reason);
+public record FailedRow(int RowNumber, FailedRowReason Reason);

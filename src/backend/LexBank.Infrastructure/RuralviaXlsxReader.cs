@@ -60,17 +60,17 @@ public class RuralviaXlsxReader : IStatementReader
 
         if (!row.Cell(1).TryGetValue<DateTime>(out var date))
         {
-            return new FailedRow(row.RowNumber(), "Invalid date");
+            return new FailedRow(row.RowNumber(), FailedRowReason.InvalidDate);
         }
 
         if (!row.Cell(4).TryGetValue<decimal>(out var amount))
         {
-            return new FailedRow(row.RowNumber(), "Invalid amount");
+            return new FailedRow(row.RowNumber(), FailedRowReason.InvalidAmount);
         }
 
         if (!row.Cell(5).TryGetValue<decimal>(out var balance))
         {
-            return new FailedRow(row.RowNumber(), "Invalid balance");
+            return new FailedRow(row.RowNumber(), FailedRowReason.InvalidBalance);
         }
 
         transaction = new Transaction(DateOnly.FromDateTime(date), row.Cell(3).GetString(), amount, "EUR", balance);

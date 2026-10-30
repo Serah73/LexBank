@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using LexBank.Application;
 using LexBank.Infrastructure;
 
@@ -6,6 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IStatementReader, RuralviaXlsxReader>();
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 var app = builder.Build();
 
