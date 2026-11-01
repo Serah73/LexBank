@@ -84,4 +84,19 @@ public class RuralviaXlsxReaderTests
 
         Assert.Equal("The file is not a Ruralvía XLSX statement", exception.Message);
     }
+
+    [Fact]
+    public void Read_ZipThatIsNotXlsx_FailsWithNotRuralviaReason()
+    {
+        using var stream = new MemoryStream();
+        using (var zip = new System.IO.Compression.ZipArchive(stream, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
+        {
+            zip.CreateEntry("notes.txt");
+        }
+        stream.Position = 0;
+
+        var exception = Assert.Throws<UnsupportedStatementException>(() => new RuralviaXlsxReader().Read(stream));
+
+        Assert.Equal("The file is not a Ruralvía XLSX statement", exception.Message);
+    }
 }

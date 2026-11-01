@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import type { ChangeEvent } from 'react'
+import { failedRowMessages, statementErrorMessages } from './messages'
+import type { FailedRowReason, StatementError } from './messages'
 
 interface Transaction {
   date: string
@@ -11,13 +13,13 @@ interface Transaction {
 
 interface FailedRow {
   rowNumber: number
-  reason: string
+  reason: FailedRowReason
 }
 
 function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [failedRows, setFailedRows] = useState<FailedRow[]>([])
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<StatementError | null>(null)
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -43,7 +45,7 @@ function App() {
     <main>
       <h1>LexBank</h1>
       <input type="file" accept=".xlsx" onChange={handleFileChange} />
-      {error && <p role="alert">{error}</p>}
+      {error && <p role="alert">{statementErrorMessages[error]}</p>}
       {transactions.length > 0 && (
         <table>
           <thead>
@@ -74,7 +76,7 @@ function App() {
           <ul>
             {failedRows.map((row) => (
               <li key={row.rowNumber}>
-                Fila {row.rowNumber}: {row.reason}
+                Fila {row.rowNumber}: {failedRowMessages[row.reason]}
               </li>
             ))}
           </ul>

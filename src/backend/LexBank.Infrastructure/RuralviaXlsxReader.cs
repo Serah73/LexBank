@@ -48,9 +48,9 @@ public class RuralviaXlsxReader : IStatementReader
         {
             return new XLWorkbook(stream);
         }
-        catch (FileFormatException)
+        catch (Exception exception)
         {
-            throw new UnsupportedStatementException(NotRuralviaMessage);
+            throw new UnsupportedStatementException(NotRuralviaMessage, exception);
         }
     }
 

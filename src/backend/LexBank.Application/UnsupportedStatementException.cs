@@ -1,3 +1,4 @@
 namespace LexBank.Application;
 
-public class UnsupportedStatementException(string message) : Exception(message);
+public class UnsupportedStatementException(string message, Exception? innerException = null)
+    : Exception(message, innerException);
