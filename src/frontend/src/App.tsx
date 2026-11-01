@@ -7,7 +7,6 @@ interface Transaction {
   date: string
   description: string
   amount: number
-  currency: string
   balance: number
 }
 
@@ -65,7 +64,6 @@ function App() {
               <th>Fecha</th>
               <th>Descripción</th>
               <th>Importe</th>
-              <th>Moneda</th>
               <th>Saldo</th>
             </tr>
           </thead>
@@ -75,7 +73,6 @@ function App() {
                 <td>{t.date}</td>
                 <td>{t.description}</td>
                 <td>{t.amount}</td>
-                <td>{t.currency}</td>
                 <td>{t.balance}</td>
               </tr>
             ))}

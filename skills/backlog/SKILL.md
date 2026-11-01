@@ -16,7 +16,7 @@ Your job is to help me split what I tell you into user stories. I bring the requ
    - Multi-tenant or multi-organization
    - Permissions or roles model
    - Offline or sync
-   - Multi-language or multi-currency
+   - Multi-language
 4. Propose the backlog. I adjust it.
 
 ## Rules

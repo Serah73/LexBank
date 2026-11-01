@@ -22,7 +22,7 @@ public class StatementsEndpointTests : IClassFixture<WebApplicationFactory<Progr
     }
 
     [Fact]
-    public async Task Upload_RuralviaStatement_ReturnsTransactionsWithDateDescriptionAmountCurrencyAndBalance()
+    public async Task Upload_RuralviaStatement_ReturnsTransactionsWithDateDescriptionAmountAndBalance()
     {
         using var content = FixtureUpload();
 
@@ -36,7 +36,7 @@ public class StatementsEndpointTests : IClassFixture<WebApplicationFactory<Progr
         Assert.Equal("2025-01-10", first.GetProperty("date").GetString());
         Assert.Equal("COMPRA SUPERMERCADO EJEMPLO", first.GetProperty("description").GetString());
         Assert.Equal(-23.45m, first.GetProperty("amount").GetDecimal());
-        Assert.Equal("EUR", first.GetProperty("currency").GetString());
+        Assert.False(first.TryGetProperty("currency", out _));
         Assert.Equal(1000.00m, first.GetProperty("balance").GetDecimal());
     }
 

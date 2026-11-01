@@ -73,3 +73,24 @@ it('shows a generic error when the request fails because the server is unreachab
   const alert = await screen.findByRole('alert')
   expect(alert.textContent).toBe('No se pudo procesar el fichero')
 })
+
+it('shows the transactions table with date, description, amount and balance', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(
+      Response.json({
+        transactions: [
+          { date: '2025-01-10', description: 'COMPRA', amount: -23.45, balance: 1000 },
+        ],
+        failedRows: [],
+      }),
+    ),
+  )
+  const { container } = render(<App />)
+
+  uploadFile(container)
+
+  await screen.findByRole('table')
+  const headers = screen.getAllByRole('columnheader').map((h) => h.textContent)
+  expect(headers).toEqual(['Fecha', 'Descripción', 'Importe', 'Saldo'])
+})

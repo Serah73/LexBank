@@ -18,7 +18,7 @@ It is intended for family use, run locally, not as a public service.
 
 - Multiple users with open email/password sign-up; each user sees only their own data; no roles.
 - Categories and rules are common to all users; rules created from corrections join the common set.
-- Multi-currency: each transaction is stored and shown in its original currency (EUR by default); no conversion for now.
+- Single currency: every amount is in EUR; no multi-currency support and no conversion.
 - Multi-language UI: Spanish and English only.
 - Always online; no offline mode.
 

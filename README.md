@@ -19,7 +19,7 @@ The system deliberately does **not** use AI/ML for categorization. Users can man
 Core use cases:
 
 1. Import a bank statement (CSV, Excel, PDF), with automatic header mapping (manual mapping as an extension).
-2. Detect and map headers (date, description, amount, currency, balance) to the common schema.
+2. Detect and map headers (date, description, amount, balance) to the common schema.
 3. Categorize transactions with the rules engine.
 4. Review and correct categories.
 

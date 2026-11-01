@@ -73,7 +73,7 @@ public class RuralviaXlsxReader : IStatementReader
             return new FailedRow(row.RowNumber(), FailedRowReason.InvalidBalance);
         }
 
-        transaction = new Transaction(DateOnly.FromDateTime(date), row.Cell(3).GetString(), amount, "EUR", balance);
+        transaction = new Transaction(DateOnly.FromDateTime(date), row.Cell(3).GetString(), amount, balance);
         return null;
     }
 }
