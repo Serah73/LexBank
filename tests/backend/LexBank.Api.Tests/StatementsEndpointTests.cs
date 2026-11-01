@@ -55,7 +55,7 @@ public class StatementsEndpointTests : IClassFixture<WebApplicationFactory<Progr
             .Select(r => (r.GetProperty("rowNumber").GetInt32(), r.GetProperty("reason").GetString()))
             .ToArray();
         Assert.Equal(
-            new[] { (8, "InvalidDate"), (9, "InvalidAmount"), (10, "InvalidBalance") },
+            new (int, string?)[] { (8, "InvalidDate"), (9, "InvalidAmount"), (10, "InvalidBalance") },
             failedRows);
     }
 
