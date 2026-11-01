@@ -20,6 +20,7 @@ It is intended for family use, run locally, not as a public service.
 - Categories and rules are common to all users; rules created from corrections join the common set.
 - Single currency: every amount is in EUR; no multi-currency support and no conversion.
 - Multi-language UI: Spanish and English only.
+- UI language: Spanish first. The API returns stable codes (enums), never user-facing text; the frontend translates them.
 - Always online; no offline mode.
 
 ## Conventions
