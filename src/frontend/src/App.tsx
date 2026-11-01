@@ -21,23 +21,35 @@ function App() {
   const [failedRows, setFailedRows] = useState<FailedRow[]>([])
   const [error, setError] = useState<StatementError | null>(null)
 
+  function showError(code: StatementError) {
+    setTransactions([])
+    setFailedRows([])
+    setError(code)
+  }
+
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     if (!file) return
+    event.target.value = ''
 
     const body = new FormData()
     body.append('file', file)
-    const response = await fetch('/api/statements', { method: 'POST', body })
-    const result = await response.json()
+    let response: Response
+    let result
+    try {
+      response = await fetch('/api/statements', { method: 'POST', body })
+      result = await response.json()
+    } catch {
+      showError('ProcessingFailed')
+      return
+    }
 
-    if (response.ok) {
+    if (response.ok && Array.isArray(result?.transactions) && Array.isArray(result?.failedRows)) {
       setTransactions(result.transactions)
       setFailedRows(result.failedRows)
       setError(null)
     } else {
-      setTransactions([])
-      setFailedRows([])
-      setError(result.error)
+      showError(Object.hasOwn(statementErrorMessages, result?.error) ? result.error : 'ProcessingFailed')
     }
   }
 

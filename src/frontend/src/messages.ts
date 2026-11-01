@@ -1,6 +1,6 @@
 export type FailedRowReason = 'InvalidDate' | 'InvalidAmount' | 'InvalidBalance'
 
-export type StatementError = 'NotRuralviaStatement'
+export type StatementError = 'NotRuralviaStatement' | 'ProcessingFailed'
 
 export const failedRowMessages: Record<FailedRowReason, string> = {
   InvalidDate: 'Fecha no válida',
@@ -10,4 +10,5 @@ export const failedRowMessages: Record<FailedRowReason, string> = {
 
 export const statementErrorMessages: Record<StatementError, string> = {
   NotRuralviaStatement: 'El fichero no es un extracto XLSX de Ruralvía',
+  ProcessingFailed: 'No se pudo procesar el fichero',
 }
