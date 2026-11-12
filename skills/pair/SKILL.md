@@ -67,3 +67,10 @@ When the list is green:
 ## 5. Commit
 
 **Never commit.** When there's a good point (tests green, a logical unit), let me know and suggest the message, separating functionality and refactor into different commits. I make the commit.
+
+## 6. Close
+
+When I confirm the story is fully done (criteria met, manual verification done, commits made), do these two things in order:
+
+1. **Update the documentation.** Read the `update-docs` skill (`SKILL.md` next to this skill's folder) and follow it: READMEs and `CLAUDE.md` files, only what the story made relevant. Its changes go in their own `docs:` commit, which I make.
+2. **Delete the local working files of that story**: `plan.md` and any leftover notes file such as `pendiente.md`. They are temporary and have served their purpose. Before deleting, move anything still worth keeping (future ideas, decisions) to the backlog or to memory, and tell me what you moved. Don't delete `Backlog.md`.
