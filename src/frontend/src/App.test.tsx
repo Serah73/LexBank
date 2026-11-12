@@ -24,7 +24,7 @@ function stubApi(upload: () => Promise<Response>, stored: unknown[] = []) {
 }
 
 it('shows a generic error when the response is not JSON', async () => {
-  stubApi(() => Promise.resolve(new Response('<html>Internal Server Error</html>', { status: 500 })))
+  stubApi(() => Promise.resolve(new Response('<html lang="en">Internal Server Error</html>', { status: 500 })))
   const { container } = render(<App />)
 
   uploadFile(container)
