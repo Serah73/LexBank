@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { failedRowMessages, statementErrorMessages } from './messages'
 import type { FailedRowReason, StatementError } from './messages'
@@ -20,7 +20,19 @@ function App() {
   const [failedRows, setFailedRows] = useState<FailedRow[]>([])
   const [error, setError] = useState<StatementError | null>(null)
 
+  const uploaded = useRef(false)
+
+  useEffect(() => {
+    fetch('/api/transactions')
+      .then((response) => response.json())
+      .then((stored) => {
+        if (!uploaded.current) setTransactions(stored)
+      })
+      .catch(() => {})
+  }, [])
+
   function showError(code: StatementError) {
+    uploaded.current = true
     setTransactions([])
     setFailedRows([])
     setError(code)
@@ -44,6 +56,7 @@ function App() {
     }
 
     if (response.ok && Array.isArray(result?.transactions) && Array.isArray(result?.failedRows)) {
+      uploaded.current = true
       setTransactions(result.transactions)
       setFailedRows(result.failedRows)
       setError(null)
