@@ -42,7 +42,7 @@ The API returns stable codes, never user-facing text. `src/messages.ts` maps eac
 
 ## Requirements
 
-- Node.js (developed with Node.js 24).
+- Node.js 24, to run the development tools (the application itself runs in the browser). The version is recorded in `.nvmrc`.
 
 ## Commands
 
