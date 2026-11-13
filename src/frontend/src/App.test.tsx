@@ -197,3 +197,61 @@ it('replaces the stored transactions with the uploaded ones and lists the failed
   expect(screen.queryByText('COMPRA')).toBeNull()
   expect(screen.getByText('Fila 8: Fecha no válida')).not.toBeNull()
 })
+
+it('shows how many transactions were skipped when some were already imported', async () => {
+  stubApi(() =>
+    Promise.resolve(
+      Response.json({
+        transactions: [{ date: '2025-02-01', description: 'NOMINA', amount: 1500, balance: 2500 }],
+        failedRows: [],
+        skippedTransactions: 2,
+      }),
+    ),
+  )
+  const { container } = render(<App />)
+
+  uploadFile(container)
+
+  expect(await screen.findByText('Movimientos omitidos por estar ya importados: 2')).not.toBeNull()
+})
+
+it('does not show the skipped message when no transaction was skipped', async () => {
+  stubApi(() =>
+    Promise.resolve(
+      Response.json({
+        transactions: [{ date: '2025-02-01', description: 'NOMINA', amount: 1500, balance: 2500 }],
+        failedRows: [],
+        skippedTransactions: 0,
+      }),
+    ),
+  )
+  const { container } = render(<App />)
+
+  uploadFile(container)
+
+  await screen.findByRole('table')
+  expect(screen.queryByText(/Movimientos omitidos/)).toBeNull()
+})
+
+it('clears the skipped message when a later upload fails', async () => {
+  let uploads = 0
+  stubApi(() =>
+    ++uploads === 1
+      ? Promise.resolve(
+          Response.json({
+            transactions: [{ date: '2025-02-01', description: 'NOMINA', amount: 1500, balance: 2500 }],
+            failedRows: [],
+            skippedTransactions: 2,
+          }),
+        )
+      : Promise.resolve(Response.json({ error: 'NotRuralviaStatement' }, { status: 400 })),
+  )
+  const { container } = render(<App />)
+  uploadFile(container)
+  await screen.findByText('Movimientos omitidos por estar ya importados: 2')
+
+  uploadFile(container)
+
+  await screen.findByRole('alert')
+  expect(screen.queryByText(/Movimientos omitidos/)).toBeNull()
+})
