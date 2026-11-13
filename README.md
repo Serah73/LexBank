@@ -94,6 +94,8 @@ npm install
 npm run dev
 ```
 
+From Git Bash, `./run.sh` starts both in a single terminal.
+
 Detailed instructions for each part:
 
 - [Backend](src/backend/README.md): running the API, database, migrations and tests.
@@ -127,6 +129,7 @@ The project is under active development.
 | Import of XLSX statements (Ruralvía) into the common schema | Implemented |
 | Report of the rows that could not be read, with their reason | Implemented |
 | Persistence of imported transactions | Implemented |
+| Skipping of transactions that were already imported | Implemented |
 | User accounts and per-user data | Planned |
 | Automatic detection of bank and headers; manual mapping | Planned |
 | CSV and PDF import | Planned |

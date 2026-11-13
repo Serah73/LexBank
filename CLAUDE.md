@@ -50,5 +50,6 @@ Run from the repository root (single solution, `LexBank.sln`):
 
 - `dotnet build`
 - `dotnet test`
+- `./run.sh` (Git Bash): starts the API and the frontend together; Ctrl+C stops both
 
 Area-specific commands and conventions are in `src/backend/CLAUDE.md` and `src/frontend/CLAUDE.md`.
