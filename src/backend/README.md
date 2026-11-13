@@ -19,13 +19,15 @@ The backend follows Clean Architecture ([ADR-0002](../../docs/adr/0002-clean-arc
 
 | Method | Route | Description |
 |---|---|---|
-| `POST` | `/api/statements` | Imports a statement sent as `multipart/form-data` in the `file` field. Returns the transactions read and the rows that could not be read, and stores the valid transactions. |
+| `POST` | `/api/statements` | Imports a statement sent as `multipart/form-data` in the `file` field. Returns the transactions read from the file, the rows that could not be read and `skippedTransactions` (the number of transactions not stored because they were already imported). Stores only the new valid transactions. |
 | `GET` | `/api/transactions` | Returns the stored transactions, newest first. |
 
 The API returns stable codes instead of user-facing text; the frontend translates them. Enumerations are serialized as strings.
 
 - A row that cannot be read is reported with its row number and a reason: `InvalidDate`, `InvalidAmount` or `InvalidBalance`.
 - A file that is not a supported statement is rejected with `400 Bad Request` and the error code `NotRuralviaStatement`.
+
+A transaction is considered already imported when a stored transaction has the same date, description, amount and balance. Identical rows inside the same file are kept: only as many copies as are already stored are skipped.
 
 In the development environment, the interactive documentation (Swagger UI) is available at `http://localhost:5236/swagger`.
 

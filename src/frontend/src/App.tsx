@@ -19,6 +19,7 @@ function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [failedRows, setFailedRows] = useState<FailedRow[]>([])
   const [error, setError] = useState<StatementError | null>(null)
+  const [skipped, setSkipped] = useState(0)
 
   const uploaded = useRef(false)
 
@@ -35,6 +36,7 @@ function App() {
     uploaded.current = true
     setTransactions([])
     setFailedRows([])
+    setSkipped(0)
     setError(code)
   }
 
@@ -59,6 +61,7 @@ function App() {
       uploaded.current = true
       setTransactions(result.transactions)
       setFailedRows(result.failedRows)
+      setSkipped(Number.isInteger(result.skippedTransactions) ? result.skippedTransactions : 0)
       setError(null)
     } else {
       showError(Object.hasOwn(statementErrorMessages, result?.error) ? result.error : 'ProcessingFailed')
@@ -70,6 +73,7 @@ function App() {
       <h1>LexBank</h1>
       <input type="file" accept=".xlsx" onChange={handleFileChange} />
       {error && <p role="alert">{statementErrorMessages[error]}</p>}
+      {skipped > 0 && <p>Movimientos omitidos por estar ya importados: {skipped}</p>}
       {transactions.length > 0 && (
         <table>
           <thead>

@@ -17,6 +17,7 @@ Run from the repository root.
 
 - **Domain:** records and enums with no dependencies (`Transaction`, `FailedRow`, `FailedRowReason`).
 - **Application:** one class per use case, named with a verb (`UploadStatement`, method `ExecuteAsync`), plus the interfaces the use cases need (`IStatementReader`, `ITransactionRepository`).
+  `UploadStatement` returns `UploadStatementResult` (including `SkippedTransactions`), not the reader's result: the reader knows nothing about duplicates.
 - **Infrastructure:** implementations of those interfaces. Third-party libraries (ClosedXML, EF Core) are used only here.
 - **Api:** minimal API endpoints and dependency injection, all in `Program.cs`. Endpoints call a use case or a repository; they hold no business logic.
 
@@ -32,7 +33,7 @@ Run from the repository root.
 
 - xUnit. Test names follow `Method_Scenario_ExpectedResult`.
 - Database tests run against real SQL Server LocalDB, never the EF in-memory provider (ADR-0006). Each test creates its own database with a unique name and drops it on dispose; follow `LexBankApiFactory` and `EfTransactionRepositoryTests`.
-- API tests use `LexBankApiFactory` (`WebApplicationFactory<Program>`).
+- API tests use `LexBankApiFactory` (`WebApplicationFactory<Program>`). To control what the reader returns, register `StubStatementReader` with `WithWebHostBuilder`.
 - Statement fixtures live in `tests/backend/LexBank.Infrastructure.Tests/Fixtures`; the Api tests link the same file instead of copying it.
 - `data/` holds real personal bank statements and is git-ignored. Never copy its contents into fixtures, tests, code or documentation.
 - LocalDB exists only on Windows; the CI job runs on `windows-latest` for that reason.

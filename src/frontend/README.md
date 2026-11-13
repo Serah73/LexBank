@@ -9,6 +9,7 @@ For the purpose and scope of the project, see the [main README](../../README.md)
 The frontend is deliberately minimal at this stage: the thesis prioritizes the backend and the categorization logic, and the visual design is scheduled for the final stories.
 
 - One screen: a file input to import an XLSX statement, the transactions table (date, description, amount, balance) and the list of rows that could not be read.
+- When an import skips transactions that were already stored, the screen shows how many were skipped.
 - The stored transactions are loaded when the page opens.
 - The interface is in Spanish only; English is planned.
 - There are no styles yet. shadcn/ui, Tailwind CSS and Recharts are part of the planned stack and are not installed.
