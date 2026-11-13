@@ -1,7 +1,10 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using LexBank.Application;
+using LexBank.Domain;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LexBank.Api.Tests;
 
@@ -27,6 +30,13 @@ public class StatementsEndpointTests : IDisposable
         file.Headers.ContentType = new MediaTypeHeaderValue("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         return new MultipartFormDataContent { { file, "file", "ruralvia.xlsx" } };
     }
+
+    private static MultipartFormDataContent AnyFileUpload() =>
+        new() { { new ByteArrayContent("any content"u8.ToArray()), "file", "statement.xlsx" } };
+
+    private HttpClient ClientReadingWith(IStatementReader reader) =>
+        _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services => services.AddSingleton(reader))).CreateClient();
 
     [Fact]
     public async Task Upload_RuralviaStatement_ReturnsTransactionsWithDateDescriptionAmountAndBalance()
@@ -69,6 +79,138 @@ public class StatementsEndpointTests : IDisposable
                 ("2025-01-10", "COMPRA SUPERMERCADO EJEMPLO", -23.45m, 1000.00m),
             },
             stored);
+    }
+
+    [Fact]
+    public async Task Upload_SameStatementTwice_StoresEachTransactionOnce()
+    {
+        using var first = FixtureUpload();
+        using var second = FixtureUpload();
+        await _client.PostAsync("/api/statements", first);
+        await _client.PostAsync("/api/statements", second);
+
+        var response = await _client.GetAsync("/api/transactions");
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(3, body.RootElement.GetArrayLength());
+    }
+
+    [Fact]
+    public async Task Upload_OverlappingStatement_StoresOnlyTheNewTransactions()
+    {
+        var reader = new StubStatementReader();
+        using var client = ClientReadingWith(reader);
+        var january = new Transaction(new DateOnly(2025, 1, 10), "COMPRA ENERO", -10m, 100m);
+        var february = new Transaction(new DateOnly(2025, 2, 10), "COMPRA FEBRERO", -20m, 80m);
+        var march = new Transaction(new DateOnly(2025, 3, 10), "COMPRA MARZO", -30m, 50m);
+
+        reader.Transactions = [january, february];
+        await client.PostAsync("/api/statements", AnyFileUpload());
+        reader.Transactions = [february, march];
+        await client.PostAsync("/api/statements", AnyFileUpload());
+        var response = await client.GetAsync("/api/transactions");
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var descriptions = body.RootElement.EnumerateArray().Select(t => t.GetProperty("description").GetString());
+        Assert.Equal(["COMPRA MARZO", "COMPRA FEBRERO", "COMPRA ENERO"], descriptions);
+    }
+
+    [Fact]
+    public async Task Upload_RowsIdenticalInsideOneFile_StoresAllOfThem()
+    {
+        var reader = new StubStatementReader();
+        using var client = ClientReadingWith(reader);
+        reader.Transactions =
+        [
+            new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m),
+            new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m),
+        ];
+
+        await client.PostAsync("/api/statements", AnyFileUpload());
+        var response = await client.GetAsync("/api/transactions");
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(2, body.RootElement.GetArrayLength());
+    }
+
+    [Fact]
+    public async Task Upload_MoreCopiesOfARowThanAreStored_StoresTheMissingOnes()
+    {
+        var reader = new StubStatementReader();
+        using var client = ClientReadingWith(reader);
+        reader.Transactions = [new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m)];
+        await client.PostAsync("/api/statements", AnyFileUpload());
+        reader.Transactions =
+        [
+            new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m),
+            new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m),
+        ];
+
+        await client.PostAsync("/api/statements", AnyFileUpload());
+        var response = await client.GetAsync("/api/transactions");
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(2, body.RootElement.GetArrayLength());
+    }
+
+    [Fact]
+    public async Task Upload_SameRowWithDifferentBalance_IsStoredAsNew()
+    {
+        var reader = new StubStatementReader();
+        using var client = ClientReadingWith(reader);
+        reader.Transactions = [new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m)];
+        await client.PostAsync("/api/statements", AnyFileUpload());
+        reader.Transactions = [new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 90m)];
+
+        await client.PostAsync("/api/statements", AnyFileUpload());
+        var response = await client.GetAsync("/api/transactions");
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(2, body.RootElement.GetArrayLength());
+    }
+
+    [Fact]
+    public async Task Upload_StatementAlreadyStored_StillReturnsItsTransactionsAndFailedRows()
+    {
+        using var first = FixtureUpload();
+        using var second = FixtureUpload();
+        await _client.PostAsync("/api/statements", first);
+
+        var response = await _client.PostAsync("/api/statements", second);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(3, body.RootElement.GetProperty("transactions").GetArrayLength());
+        Assert.Equal(3, body.RootElement.GetProperty("failedRows").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task Upload_OverlappingStatement_ReportsHowManyWereSkipped()
+    {
+        var reader = new StubStatementReader();
+        using var client = ClientReadingWith(reader);
+        var january = new Transaction(new DateOnly(2025, 1, 10), "COMPRA ENERO", -10m, 100m);
+        var february = new Transaction(new DateOnly(2025, 2, 10), "COMPRA FEBRERO", -20m, 80m);
+        var march = new Transaction(new DateOnly(2025, 3, 10), "COMPRA MARZO", -30m, 50m);
+        reader.Transactions = [january, february];
+        await client.PostAsync("/api/statements", AnyFileUpload());
+        reader.Transactions = [february, march];
+
+        var response = await client.PostAsync("/api/statements", AnyFileUpload());
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(1, body.RootElement.GetProperty("skippedTransactions").GetInt32());
+    }
+
+    [Fact]
+    public async Task Upload_NewStatement_ReportsZeroSkipped()
+    {
+        using var content = FixtureUpload();
+
+        var response = await _client.PostAsync("/api/statements", content);
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(0, body.RootElement.GetProperty("skippedTransactions").GetInt32());
     }
 
     [Fact]
