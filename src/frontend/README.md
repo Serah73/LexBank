@@ -61,3 +61,7 @@ npm run preview  # Serve the production build locally
 ## Tests
 
 The tests render the application with React Testing Library in a jsdom environment and replace `fetch` with a test double, so they do not need the backend. They follow the project's Test-Driven Development practice: each behavior of the screen is specified by a test written before the code.
+
+## Continuous integration
+
+The `frontend` workflow (`.github/workflows/frontend.yml`) installs the dependencies, runs the linter and the tests, and builds the application on every pull request that changes frontend files. See [ADR-0003](../../docs/adr/0003-branching-ci-release.md).
