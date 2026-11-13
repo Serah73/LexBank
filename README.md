@@ -106,7 +106,7 @@ Detailed instructions for each part:
 - **Incremental delivery:** the work is split into user stories that cut through every layer (data, backend and user interface), each delivering value on its own.
 - **Test-Driven Development:** production code is written only to satisfy a previously failing test (red, green, refactor).
 - **Architecture Decision Records:** relevant technical decisions, with their context, alternatives and consequences, are recorded under [`docs/adr`](docs/adr).
-- **Branching and continuous integration:** work happens on `develop`; `main` only receives changes through pull requests, which build and test the backend ([ADR-0003](docs/adr/0003-branching-ci-release.md)).
+- **Branching and continuous integration:** work happens on `develop`; `main` only receives changes through pull requests, which build and test the backend and check the frontend ([ADR-0003](docs/adr/0003-branching-ci-release.md)).
 - **AI-assisted development:** Claude Code is used as a pair-programming assistant under the author's direction and review. The skills that define that workflow (`backlog`, `story`, `pair`, `update-docs`) are published under [`skills/`](skills) for transparency.
 
 ### Architecture Decision Records
