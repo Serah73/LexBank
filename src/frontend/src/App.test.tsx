@@ -23,6 +23,144 @@ function stubApi(upload: () => Promise<Response>, stored: unknown[] = []) {
   )
 }
 
+function stubSignUp(signUp: () => Promise<Response>) {
+  const fetchMock = vi.fn((url: string, _init?: RequestInit) =>
+    url === '/api/users' ? signUp() : Promise.resolve(Response.json([])),
+  )
+  vi.stubGlobal('fetch', fetchMock)
+  return fetchMock
+}
+
+function submitSignUp(email: string, password: string) {
+  fireEvent.change(screen.getByLabelText('Correo electrónico'), { target: { value: email } })
+  fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: password } })
+  fireEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }))
+}
+
+it('shows a confirmation when the sign-up succeeds', async () => {
+  stubSignUp(() => Promise.resolve(new Response(null, { status: 201 })))
+  render(<App />)
+
+  submitSignUp('ana@example.com', 'a-long-password')
+
+  const confirmation = await screen.findByRole('status')
+  expect(confirmation.textContent).toBe('Cuenta creada correctamente')
+})
+
+it('sends the typed email and password when the sign-up form is submitted', async () => {
+  const fetchMock = stubSignUp(() => Promise.resolve(new Response(null, { status: 201 })))
+  render(<App />)
+
+  submitSignUp('ana@example.com', 'a-long-password')
+
+  await screen.findByRole('status')
+  const [, init] = fetchMock.mock.calls.find(([url]) => url === '/api/users')!
+  expect(init?.method).toBe('POST')
+  expect(new Headers(init?.headers).get('Content-Type')).toBe('application/json')
+  expect(JSON.parse(init?.body as string)).toEqual({ email: 'ana@example.com', password: 'a-long-password' })
+})
+
+it('shows that the email is already in use when the API reports it', async () => {
+  stubSignUp(() => Promise.resolve(Response.json({ error: 'EmailAlreadyRegistered' }, { status: 409 })))
+  render(<App />)
+
+  submitSignUp('ana@example.com', 'a-long-password')
+
+  const message = await screen.findByText('Ese correo electrónico ya está en uso')
+  const emailField = screen.getByLabelText('Correo electrónico')
+  expect(emailField.getAttribute('aria-invalid')).toBe('true')
+  expect(emailField.getAttribute('aria-describedby')).toBe(message.id)
+  expect(screen.queryByRole('status')).toBeNull()
+})
+
+it('shows that the email is invalid when the API reports it', async () => {
+  stubSignUp(() => Promise.resolve(Response.json({ error: 'InvalidEmail' }, { status: 400 })))
+  render(<App />)
+
+  submitSignUp('ana.example.com', 'a-long-password')
+
+  const message = await screen.findByText('El correo electrónico no es válido')
+  const emailField = screen.getByLabelText('Correo electrónico')
+  expect(emailField.getAttribute('aria-invalid')).toBe('true')
+  expect(emailField.getAttribute('aria-describedby')).toBe(message.id)
+  expect(screen.queryByRole('status')).toBeNull()
+})
+
+it('shows that the password is too short when the API reports it', async () => {
+  stubSignUp(() => Promise.resolve(Response.json({ error: 'InvalidPassword' }, { status: 400 })))
+  render(<App />)
+
+  submitSignUp('ana@example.com', '1234567')
+
+  const message = await screen.findByText('La contraseña debe tener al menos 8 caracteres')
+  const passwordField = screen.getByLabelText('Contraseña')
+  expect(passwordField.getAttribute('aria-invalid')).toBe('true')
+  expect(passwordField.getAttribute('aria-describedby')).toBe(message.id)
+  expect(screen.getByLabelText('Correo electrónico').getAttribute('aria-invalid')).not.toBe('true')
+  expect(screen.queryByRole('status')).toBeNull()
+})
+
+it('shows a generic error when the sign-up fails with an unknown code', async () => {
+  stubSignUp(() => Promise.resolve(Response.json({ error: 'SomethingElse' }, { status: 500 })))
+  render(<App />)
+
+  submitSignUp('ana@example.com', 'a-long-password')
+
+  const alert = await screen.findByRole('alert')
+  expect(alert.textContent).toBe('No se pudo crear la cuenta')
+  expect(screen.getByLabelText('Correo electrónico').getAttribute('aria-invalid')).not.toBe('true')
+  expect(screen.getByLabelText('Contraseña').getAttribute('aria-invalid')).not.toBe('true')
+  expect(screen.queryByRole('status')).toBeNull()
+})
+
+it('shows a generic error when the sign-up request fails because the server is unreachable', async () => {
+  stubSignUp(() => Promise.reject(new TypeError('Failed to fetch')))
+  render(<App />)
+
+  submitSignUp('ana@example.com', 'a-long-password')
+
+  const alert = await screen.findByRole('alert')
+  expect(alert.textContent).toBe('No se pudo crear la cuenta')
+  expect(screen.queryByRole('status')).toBeNull()
+})
+
+it('shows a generic error when the sign-up response is not JSON', async () => {
+  stubSignUp(() => Promise.resolve(new Response('<html lang="en">Internal Server Error</html>', { status: 500 })))
+  render(<App />)
+
+  submitSignUp('ana@example.com', 'a-long-password')
+
+  const alert = await screen.findByRole('alert')
+  expect(alert.textContent).toBe('No se pudo crear la cuenta')
+})
+
+it('clears the previous error when the sign-up form is submitted again and succeeds', async () => {
+  const responses = [Response.json({ error: 'EmailAlreadyRegistered' }, { status: 409 }), new Response(null, { status: 201 })]
+  stubSignUp(() => Promise.resolve(responses.shift()!))
+  render(<App />)
+  submitSignUp('ana@example.com', 'a-long-password')
+  await screen.findByText('Ese correo electrónico ya está en uso')
+
+  submitSignUp('luis@example.com', 'a-long-password')
+
+  await screen.findByRole('status')
+  expect(screen.queryByText('Ese correo electrónico ya está en uso')).toBeNull()
+  expect(screen.getByLabelText('Correo electrónico').getAttribute('aria-invalid')).not.toBe('true')
+})
+
+it('clears the previous confirmation when the sign-up form is submitted again and fails', async () => {
+  const responses = [new Response(null, { status: 201 }), Response.json({ error: 'EmailAlreadyRegistered' }, { status: 409 })]
+  stubSignUp(() => Promise.resolve(responses.shift()!))
+  render(<App />)
+  submitSignUp('ana@example.com', 'a-long-password')
+  await screen.findByRole('status')
+
+  submitSignUp('ana@example.com', 'a-long-password')
+
+  await screen.findByText('Ese correo electrónico ya está en uso')
+  expect(screen.queryByRole('status')).toBeNull()
+})
+
 it('shows a generic error when the response is not JSON', async () => {
   stubApi(() => Promise.resolve(new Response('<html lang="en">Internal Server Error</html>', { status: 500 })))
   const { container } = render(<App />)

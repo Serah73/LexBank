@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ChangeEvent } from 'react'
-import { failedRowMessages, statementErrorMessages } from './messages'
-import type { FailedRowReason, StatementError } from './messages'
+import type { ChangeEvent, FormEvent } from 'react'
+import { failedRowMessages, signUpErrorMessages, statementErrorMessages } from './messages'
+import type { FailedRowReason, SignUpError, StatementError } from './messages'
 
 interface Transaction {
   date: string
@@ -20,6 +20,10 @@ function App() {
   const [failedRows, setFailedRows] = useState<FailedRow[]>([])
   const [error, setError] = useState<StatementError | null>(null)
   const [skipped, setSkipped] = useState(0)
+  const [signedUp, setSignedUp] = useState(false)
+  const [signUpError, setSignUpError] = useState<SignUpError | null>(null)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
 
   const uploaded = useRef(false)
 
@@ -68,10 +72,65 @@ function App() {
     }
   }
 
+  async function handleSignUp(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSignUpError(null)
+    setSignedUp(false)
+    let response: Response
+    let result
+    try {
+      response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      if (!response.ok) result = await response.json()
+    } catch {
+      setSignUpError('SignUpFailed')
+      return
+    }
+
+    if (response.ok) {
+      setSignedUp(true)
+    } else {
+      setSignUpError(Object.hasOwn(signUpErrorMessages, result?.error) ? result.error : 'SignUpFailed')
+    }
+  }
+
+  const emailError = signUpError === 'EmailAlreadyRegistered' || signUpError === 'InvalidEmail' ? signUpError : null
+  const passwordError = signUpError === 'InvalidPassword' ? signUpError : null
+  const generalSignUpError = signUpError === 'SignUpFailed' ? signUpError : null
+
   return (
     <main>
       <h1>LexBank</h1>
-      <input type="file" accept=".xlsx" onChange={handleFileChange} />
+      <form onSubmit={handleSignUp} noValidate>
+        <label>
+          Correo electrónico
+          <input
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            aria-invalid={emailError !== null}
+            aria-describedby={emailError ? 'email-error' : undefined}
+          />
+        </label>
+        {emailError && <p id="email-error">{signUpErrorMessages[emailError]}</p>}
+        <label>
+          Contraseña
+          <input
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            aria-invalid={passwordError !== null}
+            aria-describedby={passwordError ? 'password-error' : undefined}
+          />
+        </label>
+        {passwordError && <p id="password-error">{signUpErrorMessages[passwordError]}</p>}
+        {generalSignUpError && <p role="alert">{signUpErrorMessages[generalSignUpError]}</p>}
+        <button type="submit">Crear cuenta</button>
+      </form>
+      {signedUp && <p role="status">Cuenta creada correctamente</p>}      <input type="file" accept=".xlsx" onChange={handleFileChange} />
       {error && <p role="alert">{statementErrorMessages[error]}</p>}
       {skipped > 0 && <p>Movimientos omitidos por estar ya importados: {skipped}</p>}
       {transactions.length > 0 && (
