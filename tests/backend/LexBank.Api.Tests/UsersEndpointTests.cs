@@ -81,6 +81,48 @@ public class UsersEndpointTests : IDisposable
         Assert.Equal(0, await CountStoredUsersAsync());
     }
 
+    [Fact]
+    public async Task SignUp_PasswordOfExactly128Characters_CreatesTheAccount()
+    {
+        var response = await _client.PostAsJsonAsync("/api/users", new { email = "ana@example.com", password = new string('p', 128) });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SignUp_PasswordLongerThan128Characters_RejectsWithInvalidPassword()
+    {
+        var response = await _client.PostAsJsonAsync("/api/users", new { email = "ana@example.com", password = new string('p', 129) });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("InvalidPassword", body.RootElement.GetProperty("error").GetString());
+        Assert.Equal(0, await CountStoredUsersAsync());
+    }
+
+    [Fact]
+    public async Task SignUp_EmailOfExactly256Characters_CreatesTheAccount()
+    {
+        var email = new string('a', 250) + "@b.com";
+
+        var response = await _client.PostAsJsonAsync("/api/users", new { email, password = "a-long-password" });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SignUp_EmailLongerThan256Characters_RejectsWithInvalidEmail()
+    {
+        var email = new string('a', 251) + "@b.com";
+
+        var response = await _client.PostAsJsonAsync("/api/users", new { email, password = "a-long-password" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("InvalidEmail", body.RootElement.GetProperty("error").GetString());
+        Assert.Equal(0, await CountStoredUsersAsync());
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("1234567")]

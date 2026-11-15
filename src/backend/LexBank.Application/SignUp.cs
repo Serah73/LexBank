@@ -5,13 +5,15 @@ namespace LexBank.Application;
 public class SignUp(IUserRepository repository, IPasswordHasher passwordHasher)
 {
     private const int MinimumPasswordLength = 8;
+    private const int MaximumPasswordLength = 128;
+    private const int MaximumEmailLength = 256;
 
     public async Task ExecuteAsync(string email, string password)
     {
-        if (!HasTextOnBothSidesOfTheAtSign(email))
+        if (email.Length > MaximumEmailLength || !HasTextOnBothSidesOfTheAtSign(email))
             throw new InvalidEmailException();
 
-        if (password.Length < MinimumPasswordLength)
+        if (password.Length < MinimumPasswordLength || password.Length > MaximumPasswordLength)
             throw new InvalidPasswordException();
 
         if (await repository.ExistsAsync(email))
