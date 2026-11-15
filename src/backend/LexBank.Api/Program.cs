@@ -12,6 +12,9 @@ builder.Services.AddDbContext<LexBankDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("LexBank")));
 builder.Services.AddScoped<ITransactionRepository, EfTransactionRepository>();
 builder.Services.AddScoped<UploadStatement>();
+builder.Services.AddScoped<IUserRepository, EfUserRepository>();
+builder.Services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
+builder.Services.AddScoped<SignUp>();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
@@ -46,6 +49,21 @@ app.MapPost("/api/statements", async (IFormFile file, UploadStatement uploadStat
 app.MapGet("/api/transactions", async (ITransactionRepository repository) =>
     Results.Ok(await repository.ListAsync()));
 
+app.MapPost("/api/users", async (SignUpRequest request, SignUp signUp) =>
+{
+    try
+    {
+        await signUp.ExecuteAsync(request.Email, request.Password);
+        return Results.Created();
+    }
+    catch (EmailAlreadyRegisteredException)
+    {
+        return Results.Conflict(new { error = "EmailAlreadyRegistered" });
+    }
+});
+
 app.Run();
+
+public record SignUpRequest(string Email, string Password);
 
 public partial class Program { }
