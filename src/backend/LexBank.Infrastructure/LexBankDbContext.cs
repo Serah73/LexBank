@@ -20,6 +20,8 @@ public class LexBankDbContext(DbContextOptions<LexBankDbContext> options) : DbCo
             user.ToTable("Users");
             user.Property<int>("Id");
             user.HasKey("Id");
+            user.Property(u => u.Email).HasMaxLength(256);
+            user.HasIndex(u => u.Email).IsUnique();
         });
     }
 }
