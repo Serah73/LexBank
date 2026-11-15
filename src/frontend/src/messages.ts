@@ -13,7 +13,7 @@ export const failedRowMessages: Record<FailedRowReason, string> = {
 export const signUpErrorMessages: Record<SignUpError, string> = {
   EmailAlreadyRegistered: 'Ese correo electrónico ya está en uso',
   InvalidEmail: 'El correo electrónico no es válido',
-  InvalidPassword: 'La contraseña debe tener al menos 8 caracteres',
+  InvalidPassword: 'La contraseña debe tener entre 8 y 128 caracteres',
   SignUpFailed: 'No se pudo crear la cuenta',
 }
 

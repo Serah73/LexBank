@@ -92,7 +92,7 @@ it('shows that the password is too short when the API reports it', async () => {
 
   submitSignUp('ana@example.com', '1234567')
 
-  const message = await screen.findByText('La contraseña debe tener al menos 8 caracteres')
+  const message = await screen.findByText('La contraseña debe tener entre 8 y 128 caracteres')
   const passwordField = screen.getByLabelText('Contraseña')
   expect(passwordField.getAttribute('aria-invalid')).toBe('true')
   expect(passwordField.getAttribute('aria-describedby')).toBe(message.id)
@@ -159,6 +159,24 @@ it('clears the previous confirmation when the sign-up form is submitted again an
 
   await screen.findByText('Ese correo electrónico ya está en uso')
   expect(screen.queryByRole('status')).toBeNull()
+})
+
+it('sends only one request while a sign-up is in progress and enables the button again afterwards', async () => {
+  let finish!: (response: Response) => void
+  const fetchMock = stubSignUp(() => new Promise<Response>((resolve) => (finish = resolve)))
+  render(<App />)
+  const button = screen.getByRole('button', { name: 'Crear cuenta' }) as HTMLButtonElement
+
+  submitSignUp('ana@example.com', 'a-long-password')
+  submitSignUp('ana@example.com', 'a-long-password')
+
+  expect(button.disabled).toBe(true)
+  expect(fetchMock.mock.calls.filter(([url]) => url === '/api/users')).toHaveLength(1)
+
+  finish(new Response(null, { status: 201 }))
+
+  await screen.findByRole('status')
+  expect(button.disabled).toBe(false)
 })
 
 it('shows a generic error when the response is not JSON', async () => {

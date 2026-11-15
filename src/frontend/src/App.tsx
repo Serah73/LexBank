@@ -21,6 +21,7 @@ function App() {
   const [error, setError] = useState<StatementError | null>(null)
   const [skipped, setSkipped] = useState(0)
   const [signedUp, setSignedUp] = useState(false)
+  const [signingUp, setSigningUp] = useState(false)
   const [signUpError, setSignUpError] = useState<SignUpError | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -76,6 +77,7 @@ function App() {
     event.preventDefault()
     setSignUpError(null)
     setSignedUp(false)
+    setSigningUp(true)
     let response: Response
     let result
     try {
@@ -88,6 +90,8 @@ function App() {
     } catch {
       setSignUpError('SignUpFailed')
       return
+    } finally {
+      setSigningUp(false)
     }
 
     if (response.ok) {
@@ -128,9 +132,12 @@ function App() {
         </label>
         {passwordError && <p id="password-error">{signUpErrorMessages[passwordError]}</p>}
         {generalSignUpError && <p role="alert">{signUpErrorMessages[generalSignUpError]}</p>}
-        <button type="submit">Crear cuenta</button>
+        <button type="submit" disabled={signingUp}>
+          Crear cuenta
+        </button>
       </form>
-      {signedUp && <p role="status">Cuenta creada correctamente</p>}      <input type="file" accept=".xlsx" onChange={handleFileChange} />
+      {signedUp && <p role="status">Cuenta creada correctamente</p>}
+      <input type="file" accept=".xlsx" onChange={handleFileChange} />
       {error && <p role="alert">{statementErrorMessages[error]}</p>}
       {skipped > 0 && <p>Movimientos omitidos por estar ya importados: {skipped}</p>}
       {transactions.length > 0 && (
