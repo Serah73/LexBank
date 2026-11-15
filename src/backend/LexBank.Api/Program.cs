@@ -53,8 +53,16 @@ app.MapPost("/api/users", async (SignUpRequest request, SignUp signUp) =>
 {
     try
     {
-        await signUp.ExecuteAsync(request.Email, request.Password);
+        await signUp.ExecuteAsync(request.Email ?? string.Empty, request.Password ?? string.Empty);
         return Results.Created();
+    }
+    catch (InvalidEmailException)
+    {
+        return Results.BadRequest(new { error = "InvalidEmail" });
+    }
+    catch (InvalidPasswordException)
+    {
+        return Results.BadRequest(new { error = "InvalidPassword" });
     }
     catch (EmailAlreadyRegisteredException)
     {
@@ -64,6 +72,6 @@ app.MapPost("/api/users", async (SignUpRequest request, SignUp signUp) =>
 
 app.Run();
 
-public record SignUpRequest(string Email, string Password);
+public record SignUpRequest(string? Email, string? Password);
 
 public partial class Program { }

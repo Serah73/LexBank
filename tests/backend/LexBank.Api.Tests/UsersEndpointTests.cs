@@ -53,6 +53,63 @@ public class UsersEndpointTests : IDisposable
     }
 
     [Fact]
+    public async Task SignUp_EmailAlreadyRegisteredWithDifferentLetterCase_RejectsWithEmailAlreadyInUse()
+    {
+        await _client.PostAsJsonAsync("/api/users", new { email = "ana@example.com", password = "a-long-password" });
+
+        var response = await _client.PostAsJsonAsync("/api/users", new { email = "ANA@Example.COM", password = "another-password" });
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("EmailAlreadyRegistered", body.RootElement.GetProperty("error").GetString());
+        Assert.Equal(1, await CountStoredUsersAsync());
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("ana.example.com")]
+    [InlineData("ana@")]
+    [InlineData("@example.com")]
+    public async Task SignUp_InvalidEmail_RejectsWithInvalidEmail(string email)
+    {
+        var response = await _client.PostAsJsonAsync("/api/users", new { email, password = "a-long-password" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("InvalidEmail", body.RootElement.GetProperty("error").GetString());
+        Assert.Equal(0, await CountStoredUsersAsync());
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("1234567")]
+    public async Task SignUp_PasswordShorterThanEightCharacters_RejectsWithInvalidPassword(string password)
+    {
+        var response = await _client.PostAsJsonAsync("/api/users", new { email = "ana@example.com", password });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("InvalidPassword", body.RootElement.GetProperty("error").GetString());
+        Assert.Equal(0, await CountStoredUsersAsync());
+    }
+
+    [Theory]
+    [InlineData("""{ "password": "a-long-password" }""", "InvalidEmail")]
+    [InlineData("""{ "email": "ana@example.com" }""", "InvalidPassword")]
+    public async Task SignUp_MissingEmailOrPassword_RejectsWithTheMatchingCode(string json, string expectedCode)
+    {
+        using var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+        var response = await _client.PostAsync("/api/users", content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(expectedCode, body.RootElement.GetProperty("error").GetString());
+        Assert.Equal(0, await CountStoredUsersAsync());
+    }
+
+    [Fact]
     public async Task SignUp_NewEmail_StoresThePasswordProtectedNotInPlainText()
     {
         const string password = "a-long-password";
