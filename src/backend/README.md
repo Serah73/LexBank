@@ -106,4 +106,4 @@ The database tests use LocalDB too (see [ADR-0006](../../docs/adr/0006-localdb-f
 
 ## Continuous integration
 
-The `backend` workflow (`.github/workflows/backend.yml`) builds the solution and runs the tests on every pull request that changes backend files. It runs on a Windows runner because the database tests need LocalDB. See [ADR-0003](../../docs/adr/0003-branching-ci-release.md).
+The `backend` workflow (`.github/workflows/backend.yml`) builds the solution and runs the tests on every pull request into `main` that changes backend files. It runs on a Windows runner because the database tests need LocalDB. See [ADR-0003](../../docs/adr/0003-branching-ci-release.md).

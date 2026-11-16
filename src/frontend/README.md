@@ -64,4 +64,4 @@ The tests render the application with React Testing Library in a jsdom environme
 
 ## Continuous integration
 
-The `frontend` workflow (`.github/workflows/frontend.yml`) installs the dependencies, runs the linter and the tests, and builds the application on every pull request that changes frontend files. See [ADR-0003](../../docs/adr/0003-branching-ci-release.md).
+The `frontend` workflow (`.github/workflows/frontend.yml`) installs the dependencies, runs the linter and the tests, and builds the application on every pull request into `main` that changes frontend files. See [ADR-0003](../../docs/adr/0003-branching-ci-release.md).

@@ -12,11 +12,12 @@
 ## Decision
 
 - **Branches:** work is done on `develop`; `main` is protected and only receives changes through a pull request. No status check is required to merge.
-- **CI (`backend.yml`):** runs `dotnet build` and `dotnet test` in Release mode on pull requests, only when backend files, the solution or the workflow itself change. It has a 5-minute timeout.
+- **CI (`backend.yml`):** runs `dotnet build` and `dotnet test` in Release mode on pull requests into `main`, only when backend files, the solution or the workflow itself change. It has a 5-minute timeout.
 - **Release (`release.yml`):** when backend files change on `main` (that is, when a pull request is merged), it creates a git tag and runs a placeholder deployment step. It does not rebuild or retest, because the same code was already tested by `backend` on the pull request. It can also be run manually from `main`.
 - **Versioning:** automatic tags are `v0.0.<run_number>`. For significant versions (e.g. `v1.1.0` or `v2.0.0`), a manual run accepts an explicit `v<major>.<minor>.<patch>` tag.
-- **CI (`frontend.yml`):** runs `npm ci`, lint, tests and build on pull requests, only when frontend files or the workflow itself change. It runs on Linux, since it needs no LocalDB, and has a 5-minute timeout.
+- **CI (`frontend.yml`):** runs `npm ci`, lint, tests and build on pull requests into `main`, only when frontend files or the workflow itself change. It runs on Linux, since it needs no LocalDB, and has a 5-minute timeout.
 - Each area (backend, frontend) has its own workflow with its own path filter.
+- Both CI workflows run only on pull requests whose base is `main`. A pull request into `develop` (for example from a story branch) does not run them, because the same changes are tested when `develop` is merged into `main`; running them on both would test the same code twice.
 
 ## Alternatives considered
 
@@ -28,5 +29,5 @@
 ## Consequences
 
 - **Positive:** every accepted backend change produces a traceable tag; pipelines per area stay independent and simple.
-- **Negative:** `release` is not gated by tests, since the `backend` check is not required to merge; a pull request merged with a failing check would still be tagged. Merges that do not change backend files produce no release; automatic version numbers do not follow semantic versioning and may skip numbers when a run fails.
+- **Negative:** `release` is not gated by tests, since the `backend` check is not required to merge; a pull request merged with a failing check would still be tagged. Merges that do not change backend files produce no release; automatic version numbers do not follow semantic versioning and may skip numbers when a run fails. A change is tested only when it reaches `main`, so a failure in `develop` is found later than it would be with a check on every pull request.
 - `release` still reacts only to backend changes, so a pull request that changes only the frontend produces no tag. When the frontend needs releasing, `release` will have to decide how it combines both pipelines; as written, each one would trigger its own tag.
