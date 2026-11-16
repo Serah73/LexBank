@@ -10,9 +10,9 @@ The backend follows Clean Architecture ([ADR-0002](../../docs/adr/0002-clean-arc
 
 | Project | Responsibility | References |
 |---|---|---|
-| `LexBank.Domain` | Business concepts: `Transaction`, `FailedRow`, `FailedRowReason`. | Nothing |
-| `LexBank.Application` | Use cases (`UploadStatement`) and the interfaces they need (`IStatementReader`, `ITransactionRepository`). | Domain |
-| `LexBank.Infrastructure` | Implementations: `RuralviaXlsxReader` (ClosedXML), `EfTransactionRepository` and `LexBankDbContext` (EF Core), migrations. | Application |
+| `LexBank.Domain` | Business concepts: `Transaction`, `FailedRow`, `FailedRowReason`, `User`. | Nothing |
+| `LexBank.Application` | Use cases (`UploadStatement`, `SignUp`) and the interfaces they need (`IStatementReader`, `ITransactionRepository`, `IUserRepository`, `IPasswordHasher`). | Domain |
+| `LexBank.Infrastructure` | Implementations: `RuralviaXlsxReader` (ClosedXML), `EfTransactionRepository`, `EfUserRepository` and `LexBankDbContext` (EF Core), `IdentityPasswordHasher` (password hashing with `Microsoft.Extensions.Identity.Core`), migrations. | Application |
 | `LexBank.Api` | Minimal API endpoints and dependency injection. | Application, Infrastructure |
 
 ## API
@@ -21,11 +21,15 @@ The backend follows Clean Architecture ([ADR-0002](../../docs/adr/0002-clean-arc
 |---|---|---|
 | `POST` | `/api/statements` | Imports a statement sent as `multipart/form-data` in the `file` field. Returns the transactions read from the file, the rows that could not be read and `skippedTransactions` (the number of transactions not stored because they were already imported). Stores only the new valid transactions. |
 | `GET` | `/api/transactions` | Returns the stored transactions, newest first. |
+| `POST` | `/api/users` | Creates a user account from a JSON body `{ "email", "password" }`. Returns `201 Created`. It does not start a session. A missing field is treated as empty. |
 
 The API returns stable codes instead of user-facing text; the frontend translates them. Enumerations are serialized as strings.
 
 - A row that cannot be read is reported with its row number and a reason: `InvalidDate`, `InvalidAmount` or `InvalidBalance`.
 - A file that is not a supported statement is rejected with `400 Bad Request` and the error code `NotRuralviaStatement`.
+- A sign-up is rejected with `400 Bad Request` and the error code `InvalidEmail` or `InvalidPassword`, or with `409 Conflict` and `EmailAlreadyRegistered`. If both fields are invalid, only `InvalidEmail` is returned.
+
+An email is valid when it has at least one character before and after the first `@` and at most 256 characters. A password must have between 8 and 128 characters; there are no composition rules. Emails are compared without distinguishing case (the collation of SQL Server) and are stored as written. Passwords are stored only as a hash.
 
 A transaction is considered already imported when a stored transaction has the same date, description, amount and balance. Identical rows inside the same file are kept: only as many copies as are already stored are skipped.
 
@@ -56,7 +60,7 @@ Server=(localdb)\MSSQLLocalDB;Database=LexBank;Integrated Security=true
 
 LocalDB runs under your Windows user and starts on demand. It does not listen on the network, so it does not show up under `localhost\SQLEXPRESS` or any other instance: you must connect to it by its own name. The files are in your user folder (`LexBank.mdf` and `LexBank_log.ldf`); do not open them directly, SQL Server keeps them locked.
 
-The `LexBank` database has two tables: `Transaction` (the imported transactions) and `__EFMigrationsHistory` (the migrations already applied).
+The `LexBank` database has three tables: `Transaction` (the imported transactions), `Users` (the accounts, with a unique index on `Email`) and `__EFMigrationsHistory` (the migrations already applied).
 
 ## Inspect the data
 
@@ -98,9 +102,9 @@ The tests are written with xUnit and live under `tests/backend`, one project per
 
 | Project | What it tests |
 |---|---|
-| `LexBank.Infrastructure.Tests` | The Ruralvía XLSX reader, against a fixture file, and the EF Core repository, against a real database. |
+| `LexBank.Infrastructure.Tests` | The Ruralvía XLSX reader, against a fixture file, and the EF Core repositories, against a real database. |
 | `LexBank.Api.Tests` | The HTTP endpoints end to end, with the API hosted in memory and a real database. |
-| `LexBank.Domain.Tests` | Reserved for domain logic; it has no tests yet. |
+| `LexBank.Domain.Tests` | Domain logic. |
 
 The database tests use LocalDB too (see [ADR-0006](../../docs/adr/0006-localdb-for-database-tests.md)). Each test creates its own database and drops it at the end, so they never touch the `LexBank` development database.
 

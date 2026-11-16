@@ -18,13 +18,15 @@ Run from the repository root.
 - **Domain:** records and enums with no dependencies (`Transaction`, `FailedRow`, `FailedRowReason`).
 - **Application:** one class per use case, named with a verb (`UploadStatement`, method `ExecuteAsync`), plus the interfaces the use cases need (`IStatementReader`, `ITransactionRepository`).
   `UploadStatement` returns `UploadStatementResult` (including `SkippedTransactions`), not the reader's result: the reader knows nothing about duplicates.
-- **Infrastructure:** implementations of those interfaces. Third-party libraries (ClosedXML, EF Core) are used only here.
-- **Api:** minimal API endpoints and dependency injection, all in `Program.cs`. Endpoints call a use case or a repository; they hold no business logic.
+- **Infrastructure:** implementations of those interfaces. Third-party libraries (ClosedXML, EF Core, `Microsoft.Extensions.Identity.Core` for password hashing in `IdentityPasswordHasher`) are used only here.
+- **Api:** minimal API endpoints and dependency injection, all in `Program.cs`. Endpoints call a use case or a repository; they hold no business logic. The exceptions a use case throws (`InvalidEmailException`, `EmailAlreadyRegisteredException`...) are mapped to status codes and error codes in `Program.cs`.
 
 ## Conventions
 
 - **Codes, not text:** responses carry stable codes (enum names serialized as strings, error codes such as `NotRuralviaStatement`). Never return user-facing messages; the frontend translates them in `src/frontend/src/messages.ts`. A new code needs its translation there.
 - **Persistence:** `Transaction` has no id property; `Id` is an EF Core shadow property. Do not add persistence concerns to Domain types.
+- **Passwords:** never store or log one in clear. `User` overrides `PrintMembers` so its `ToString()` hides the hash; keep it when changing the record.
+- **Users table:** `Users.Email` has a unique index; a model change that breaks the development database is fixed by dropping and recreating it.
 - **Listing order:** transactions are listed by `Date DESC, Id ASC`.
 - **Migrations:** the API applies pending migrations on startup. Every model change needs a migration; never edit an applied one.
 - **`Microsoft.EntityFrameworkCore.Design` in `LexBank.Api`:** required by `dotnet-ef` in the startup project (`PrivateAssets=all`). It is not a dependency-rule violation; do not remove it.
