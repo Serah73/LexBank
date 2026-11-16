@@ -2,6 +2,8 @@ name: backend
 
 on:
   pull_request:
+    branches:
+      - main
     paths:
       - src/backend/**
       - tests/backend/**

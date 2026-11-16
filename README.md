@@ -130,6 +130,7 @@ The project is under active development.
 | Report of the rows that could not be read, with their reason | Implemented |
 | Persistence of imported transactions | Implemented |
 | Skipping of transactions that were already imported | Implemented |
+| User sign-up with email and password | Implemented |
 | User accounts and per-user data | Planned |
 | Automatic detection of bank and headers; manual mapping | Planned |
 | CSV and PDF import | Planned |

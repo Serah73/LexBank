@@ -14,5 +14,14 @@ public class LexBankDbContext(DbContextOptions<LexBankDbContext> options) : DbCo
             transaction.Property(t => t.Amount).HasPrecision(18, 2);
             transaction.Property(t => t.Balance).HasPrecision(18, 2);
         });
+
+        modelBuilder.Entity<User>(user =>
+        {
+            user.ToTable("Users");
+            user.Property<int>("Id");
+            user.HasKey("Id");
+            user.Property(u => u.Email).HasMaxLength(256);
+            user.HasIndex(u => u.Email).IsUnique();
+        });
     }
 }
