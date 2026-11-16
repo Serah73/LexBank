@@ -1,6 +1,9 @@
+using System.Security.Claims;
 using System.Text.Json.Serialization;
 using LexBank.Application;
 using LexBank.Infrastructure;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +18,18 @@ builder.Services.AddScoped<UploadStatement>();
 builder.Services.AddScoped<IUserRepository, EfUserRepository>();
 builder.Services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
 builder.Services.AddScoped<SignUp>();
+builder.Services.AddScoped<LogIn>();
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
+{
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+});
+builder.Services.AddAuthorization();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
@@ -32,22 +47,24 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 
-app.MapPost("/api/statements", async (IFormFile file, UploadStatement uploadStatement) =>
+app.MapPost("/api/statements", async (IFormFile file, ClaimsPrincipal user, UploadStatement uploadStatement) =>
 {
     using var stream = file.OpenReadStream();
     try
     {
-        return Results.Ok(await uploadStatement.ExecuteAsync(stream));
+        return Results.Ok(await uploadStatement.ExecuteAsync(user.FindFirstValue(ClaimTypes.Email)!, stream));
     }
     catch (UnsupportedStatementException)
     {
         return Results.BadRequest(new { error = "NotRuralviaStatement" });
     }
-}).DisableAntiforgery();
+}).DisableAntiforgery().RequireAuthorization();
 
-app.MapGet("/api/transactions", async (ITransactionRepository repository) =>
-    Results.Ok(await repository.ListAsync()));
+app.MapGet("/api/transactions", async (ClaimsPrincipal user, ITransactionRepository repository) =>
+    Results.Ok(await repository.ListAsync(user.FindFirstValue(ClaimTypes.Email)!))).RequireAuthorization();
 
 app.MapPost("/api/users", async (SignUpRequest request, SignUp signUp) =>
 {
@@ -70,8 +87,35 @@ app.MapPost("/api/users", async (SignUpRequest request, SignUp signUp) =>
     }
 });
 
+app.MapPost("/api/session", async (LogInRequest request, LogIn logIn, HttpContext context) =>
+{
+    var email = request.Email ?? string.Empty;
+    try
+    {
+        await logIn.ExecuteAsync(email, request.Password ?? string.Empty);
+    }
+    catch (InvalidCredentialsException)
+    {
+        return Results.Json(new { error = "InvalidCredentials" }, statusCode: StatusCodes.Status401Unauthorized);
+    }
+
+    var identity = new ClaimsIdentity(
+        [new Claim(ClaimTypes.Email, email)],
+        CookieAuthenticationDefaults.AuthenticationScheme);
+    await context.SignInAsync(new ClaimsPrincipal(identity));
+    return Results.Ok();
+});
+
+app.MapDelete("/api/session", async (HttpContext context) =>
+{
+    await context.SignOutAsync();
+    return Results.NoContent();
+});
+
 app.Run();
 
 public record SignUpRequest(string? Email, string? Password);
+
+public record LogInRequest(string? Email, string? Password);
 
 public partial class Program { }

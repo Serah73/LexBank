@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace LexBank.Api.Tests;
 
-public class StatementsEndpointTests : IDisposable
+public class StatementsEndpointTests : IAsyncLifetime
 {
     private readonly LexBankApiFactory _factory = new();
     private readonly HttpClient _client;
@@ -18,10 +18,13 @@ public class StatementsEndpointTests : IDisposable
         _client = _factory.CreateClient();
     }
 
-    public void Dispose()
+    public async Task InitializeAsync() => await _client.LogInAsync();
+
+    public Task DisposeAsync()
     {
         _client.Dispose();
         _factory.Dispose();
+        return Task.CompletedTask;
     }
 
     private static MultipartFormDataContent FixtureUpload()
@@ -34,9 +37,13 @@ public class StatementsEndpointTests : IDisposable
     private static MultipartFormDataContent AnyFileUpload() =>
         new() { { new ByteArrayContent("any content"u8.ToArray()), "file", "statement.xlsx" } };
 
-    private HttpClient ClientReadingWith(IStatementReader reader) =>
-        _factory.WithWebHostBuilder(builder =>
+    private async Task<HttpClient> ClientReadingWithAsync(IStatementReader reader)
+    {
+        var client = _factory.WithWebHostBuilder(builder =>
             builder.ConfigureServices(services => services.AddSingleton(reader))).CreateClient();
+        await client.LogInAsync();
+        return client;
+    }
 
     [Fact]
     public async Task Upload_RuralviaStatement_ReturnsTransactionsWithDateDescriptionAmountAndBalance()
@@ -99,7 +106,7 @@ public class StatementsEndpointTests : IDisposable
     public async Task Upload_OverlappingStatement_StoresOnlyTheNewTransactions()
     {
         var reader = new StubStatementReader();
-        using var client = ClientReadingWith(reader);
+        using var client = await ClientReadingWithAsync(reader);
         var january = new Transaction(new DateOnly(2025, 1, 10), "COMPRA ENERO", -10m, 100m);
         var february = new Transaction(new DateOnly(2025, 2, 10), "COMPRA FEBRERO", -20m, 80m);
         var march = new Transaction(new DateOnly(2025, 3, 10), "COMPRA MARZO", -30m, 50m);
@@ -119,7 +126,7 @@ public class StatementsEndpointTests : IDisposable
     public async Task Upload_RowsIdenticalInsideOneFile_StoresAllOfThem()
     {
         var reader = new StubStatementReader();
-        using var client = ClientReadingWith(reader);
+        using var client = await ClientReadingWithAsync(reader);
         reader.Transactions =
         [
             new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m),
@@ -137,7 +144,7 @@ public class StatementsEndpointTests : IDisposable
     public async Task Upload_MoreCopiesOfARowThanAreStored_StoresTheMissingOnes()
     {
         var reader = new StubStatementReader();
-        using var client = ClientReadingWith(reader);
+        using var client = await ClientReadingWithAsync(reader);
         reader.Transactions = [new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m)];
         await client.PostAsync("/api/statements", AnyFileUpload());
         reader.Transactions =
@@ -157,7 +164,7 @@ public class StatementsEndpointTests : IDisposable
     public async Task Upload_SameRowWithDifferentBalance_IsStoredAsNew()
     {
         var reader = new StubStatementReader();
-        using var client = ClientReadingWith(reader);
+        using var client = await ClientReadingWithAsync(reader);
         reader.Transactions = [new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m)];
         await client.PostAsync("/api/statements", AnyFileUpload());
         reader.Transactions = [new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 90m)];
@@ -188,7 +195,7 @@ public class StatementsEndpointTests : IDisposable
     public async Task Upload_OverlappingStatement_ReportsHowManyWereSkipped()
     {
         var reader = new StubStatementReader();
-        using var client = ClientReadingWith(reader);
+        using var client = await ClientReadingWithAsync(reader);
         var january = new Transaction(new DateOnly(2025, 1, 10), "COMPRA ENERO", -10m, 100m);
         var february = new Transaction(new DateOnly(2025, 2, 10), "COMPRA FEBRERO", -20m, 80m);
         var march = new Transaction(new DateOnly(2025, 3, 10), "COMPRA MARZO", -30m, 50m);
@@ -211,6 +218,38 @@ public class StatementsEndpointTests : IDisposable
 
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.Equal(0, body.RootElement.GetProperty("skippedTransactions").GetInt32());
+    }
+
+    [Fact]
+    public async Task GetTransactions_AnotherUserImportedAStatement_ReturnsOnlyOwnTransactions()
+    {
+        using var other = _factory.CreateClient();
+        await other.LogInAsync("luis@example.com");
+        using var content = FixtureUpload();
+        await _client.PostAsync("/api/statements", content);
+
+        var response = await other.GetAsync("/api/transactions");
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(0, body.RootElement.GetArrayLength());
+    }
+
+    [Fact]
+    public async Task PostStatements_AnotherUserImportedTheSameStatement_StoresEveryTransaction()
+    {
+        using var other = _factory.CreateClient();
+        await other.LogInAsync("luis@example.com");
+        using var first = FixtureUpload();
+        using var second = FixtureUpload();
+        await _client.PostAsync("/api/statements", first);
+
+        var response = await other.PostAsync("/api/statements", second);
+        var listResponse = await other.GetAsync("/api/transactions");
+
+        using var uploaded = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(0, uploaded.RootElement.GetProperty("skippedTransactions").GetInt32());
+        using var stored = JsonDocument.Parse(await listResponse.Content.ReadAsStringAsync());
+        Assert.Equal(3, stored.RootElement.GetArrayLength());
     }
 
     [Fact]
