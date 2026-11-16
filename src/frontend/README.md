@@ -8,7 +8,8 @@ For the purpose and scope of the project, see the [main README](../../README.md)
 
 The frontend is deliberately minimal at this stage: the thesis prioritizes the backend and the categorization logic, and the visual design is scheduled for the final stories.
 
-- One screen: a file input to import an XLSX statement, the transactions table (date, description, amount, balance) and the list of rows that could not be read.
+- One screen with two parts. The sign-up form (email and password) creates an account and confirms it; each error from the API is shown under its field. It does not start a session.
+- The import part: a file input to import an XLSX statement, the transactions table (date, description, amount, balance) and the list of rows that could not be read.
 - When an import skips transactions that were already stored, the screen shows how many were skipped.
 - The stored transactions are loaded when the page opens.
 - The interface is in Spanish only; English is planned.
@@ -37,7 +38,7 @@ src/messages.ts    Translation of the API codes into user-facing text
 
 ## Communication with the API
 
-The frontend calls the backend REST API under `/api`. The development server proxies `/api` to `http://localhost:5236` (see `vite.config.ts`), so the backend must be running to import or list transactions. See the [backend README](../backend/README.md).
+The frontend calls the backend REST API under `/api`. The development server proxies `/api` to `http://localhost:5236` (see `vite.config.ts`), so the backend must be running to sign up, import or list transactions. See the [backend README](../backend/README.md).
 
 The API returns stable codes, never user-facing text. `src/messages.ts` maps each code to the message shown to the user; a code the frontend does not know is shown as a generic error.
 
