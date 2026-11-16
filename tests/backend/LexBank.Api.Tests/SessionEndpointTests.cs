@@ -1,6 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Claims;
 using System.Text.Json;
+using LexBank.Domain;
+using LexBank.Infrastructure;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace LexBank.Api.Tests;
 
@@ -89,6 +96,36 @@ public class SessionEndpointTests : IDisposable
         var response = await _client.GetAsync("/api/transactions");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetTransactions_SessionOfAUserThatNoLongerExists_ReturnsUnauthorized()
+    {
+        await _client.LogInAsync();
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<LexBankDbContext>();
+            await context.Set<User>().ExecuteDeleteAsync();
+        }
+
+        var response = await _client.GetAsync("/api/transactions");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostSession_EmailInDifferentCase_StoresTheRegisteredEmailInTheSession()
+    {
+        await _client.PostAsJsonAsync("/api/users", new { email = "ana@example.com", password = "a-long-password" });
+
+        var response = await _client.PostAsJsonAsync("/api/session", new { email = "ANA@Example.COM", password = "a-long-password" });
+
+        var cookie = Assert.Single(response.Headers.GetValues("Set-Cookie"));
+        var value = cookie.Split(';')[0].Split('=', 2)[1];
+        var options = _factory.Services.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>()
+            .Get(CookieAuthenticationDefaults.AuthenticationScheme);
+        var ticket = options.TicketDataFormat.Unprotect(value);
+        Assert.Equal("ana@example.com", ticket!.Principal.FindFirstValue(ClaimTypes.Email));
     }
 
     [Fact]

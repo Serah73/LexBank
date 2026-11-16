@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text.Json.Serialization;
 using LexBank.Application;
+using LexBank.Domain;
 using LexBank.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -27,6 +28,16 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     {
         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
         return Task.CompletedTask;
+    };
+    options.Events.OnValidatePrincipal = async context =>
+    {
+        var email = context.Principal?.FindFirstValue(ClaimTypes.Email);
+        var users = context.HttpContext.RequestServices.GetRequiredService<IUserRepository>();
+        if (email is null || !await users.ExistsAsync(email))
+        {
+            context.RejectPrincipal();
+            await context.HttpContext.SignOutAsync();
+        }
     };
 });
 builder.Services.AddAuthorization();
@@ -89,10 +100,10 @@ app.MapPost("/api/users", async (SignUpRequest request, SignUp signUp) =>
 
 app.MapPost("/api/session", async (LogInRequest request, LogIn logIn, HttpContext context) =>
 {
-    var email = request.Email ?? string.Empty;
+    User user;
     try
     {
-        await logIn.ExecuteAsync(email, request.Password ?? string.Empty);
+        user = await logIn.ExecuteAsync(request.Email ?? string.Empty, request.Password ?? string.Empty);
     }
     catch (InvalidCredentialsException)
     {
@@ -100,7 +111,7 @@ app.MapPost("/api/session", async (LogInRequest request, LogIn logIn, HttpContex
     }
 
     var identity = new ClaimsIdentity(
-        [new Claim(ClaimTypes.Email, email)],
+        [new Claim(ClaimTypes.Email, user.Email)],
         CookieAuthenticationDefaults.AuthenticationScheme);
     await context.SignInAsync(new ClaimsPrincipal(identity));
     return Results.Ok();
