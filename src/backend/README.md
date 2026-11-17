@@ -11,7 +11,7 @@ The backend follows Clean Architecture ([ADR-0002](../../docs/adr/0002-clean-arc
 | Project | Responsibility | References |
 |---|---|---|
 | `LexBank.Domain` | Business concepts: `Transaction`, `FailedRow`, `FailedRowReason`, `User`. | Nothing |
-| `LexBank.Application` | Use cases (`UploadStatement`, `SignUp`) and the interfaces they need (`IStatementReader`, `ITransactionRepository`, `IUserRepository`, `IPasswordHasher`). | Domain |
+| `LexBank.Application` | Use cases (`UploadStatement`, `SignUp`, `LogIn`) and the interfaces they need (`IStatementReader`, `ITransactionRepository`, `IUserRepository`, `IPasswordHasher`). | Domain |
 | `LexBank.Infrastructure` | Implementations: `RuralviaXlsxReader` (ClosedXML), `EfTransactionRepository`, `EfUserRepository` and `LexBankDbContext` (EF Core), `IdentityPasswordHasher` (password hashing with `Microsoft.Extensions.Identity.Core`), migrations. | Application |
 | `LexBank.Api` | Minimal API endpoints and dependency injection. | Application, Infrastructure |
 
@@ -19,19 +19,25 @@ The backend follows Clean Architecture ([ADR-0002](../../docs/adr/0002-clean-arc
 
 | Method | Route | Description |
 |---|---|---|
-| `POST` | `/api/statements` | Imports a statement sent as `multipart/form-data` in the `file` field. Returns the transactions read from the file, the rows that could not be read and `skippedTransactions` (the number of transactions not stored because they were already imported). Stores only the new valid transactions. |
-| `GET` | `/api/transactions` | Returns the stored transactions, newest first. |
+| `POST` | `/api/statements` | Requires a session. Imports a statement sent as `multipart/form-data` in the `file` field. Returns the transactions read from the file, the rows that could not be read and `skippedTransactions` (the number of transactions not stored because they were already imported). Stores only the new valid transactions, for the user of the session. |
+| `GET` | `/api/transactions` | Requires a session. Returns the stored transactions of the user of the session, newest first. |
 | `POST` | `/api/users` | Creates a user account from a JSON body `{ "email", "password" }`. Returns `201 Created`. It does not start a session. A missing field is treated as empty. |
+| `POST` | `/api/session` | Logs in with a JSON body `{ "email", "password" }`. Returns `200 OK` and sets the session cookie. A missing field is treated as empty. |
+| `DELETE` | `/api/session` | Ends the session and removes the cookie. Returns `204 No Content`. |
 
 The API returns stable codes instead of user-facing text; the frontend translates them. Enumerations are serialized as strings.
 
 - A row that cannot be read is reported with its row number and a reason: `InvalidDate`, `InvalidAmount` or `InvalidBalance`.
 - A file that is not a supported statement is rejected with `400 Bad Request` and the error code `NotRuralviaStatement`.
 - A sign-up is rejected with `400 Bad Request` and the error code `InvalidEmail` or `InvalidPassword`, or with `409 Conflict` and `EmailAlreadyRegistered`. If both fields are invalid, only `InvalidEmail` is returned.
+- A log-in with an unknown email or a wrong password is rejected with `401 Unauthorized` and the error code `InvalidCredentials`; the response is the same in both cases, so it does not reveal which emails are registered.
+- A request to a protected endpoint without a valid session is answered with `401 Unauthorized` and no body. A session whose user no longer exists is rejected the same way.
+
+Authentication uses a session cookie (`HttpOnly`, `SameSite=Strict`) that carries the email of the user; see [ADR-0007](../../docs/adr/0007-cookie-authentication.md).
 
 An email is valid when it has at least one character before and after the first `@` and at most 256 characters. A password must have between 8 and 128 characters; there are no composition rules. Emails are compared without distinguishing case (the collation of SQL Server) and are stored as written. Passwords are stored only as a hash.
 
-A transaction is considered already imported when a stored transaction has the same date, description, amount and balance. Identical rows inside the same file are kept: only as many copies as are already stored are skipped.
+A transaction is considered already imported when a transaction stored for the same user has the same date, description, amount and balance. Identical rows inside the same file are kept: only as many copies as are already stored are skipped.
 
 In the development environment, the interactive documentation (Swagger UI) is available at `http://localhost:5236/swagger`.
 
@@ -60,7 +66,7 @@ Server=(localdb)\MSSQLLocalDB;Database=LexBank;Integrated Security=true
 
 LocalDB runs under your Windows user and starts on demand. It does not listen on the network, so it does not show up under `localhost\SQLEXPRESS` or any other instance: you must connect to it by its own name. The files are in your user folder (`LexBank.mdf` and `LexBank_log.ldf`); do not open them directly, SQL Server keeps them locked.
 
-The `LexBank` database has three tables: `Transaction` (the imported transactions), `Users` (the accounts, with a unique index on `Email`) and `__EFMigrationsHistory` (the migrations already applied).
+The `LexBank` database has three tables: `Transaction` (the imported transactions, each one linked to its user through `UserId`), `Users` (the accounts, with a unique index on `Email`) and `__EFMigrationsHistory` (the migrations already applied).
 
 ## Inspect the data
 

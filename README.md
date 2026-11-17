@@ -119,6 +119,7 @@ Detailed instructions for each part:
 | [0004](docs/adr/0004-closedxml-for-xlsx.md) | Use ClosedXML to read XLSX statements |
 | [0005](docs/adr/0005-vitest-for-frontend-tests.md) | Use Vitest for frontend tests |
 | [0006](docs/adr/0006-localdb-for-database-tests.md) | Test the database layer against SQL Server LocalDB |
+| [0007](docs/adr/0007-cookie-authentication.md) | Cookie authentication |
 
 ## Project status
 
@@ -131,7 +132,7 @@ The project is under active development.
 | Persistence of imported transactions | Implemented |
 | Skipping of transactions that were already imported | Implemented |
 | User sign-up with email and password | Implemented |
-| User accounts and per-user data | Planned |
+| User log-in with email and password; each user sees only their own data | Implemented |
 | Automatic detection of bank and headers; manual mapping | Planned |
 | CSV and PDF import | Planned |
 | Deterministic categorization engine, corrections and rule management | Planned |

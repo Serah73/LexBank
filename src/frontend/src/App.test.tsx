@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import App from './App'
 
@@ -25,23 +25,149 @@ function stubApi(upload: () => Promise<Response>, stored: unknown[] = []) {
 
 function stubSignUp(signUp: () => Promise<Response>) {
   const fetchMock = vi.fn((url: string, _init?: RequestInit) =>
-    url === '/api/users' ? signUp() : Promise.resolve(Response.json([])),
+    url === '/api/users' ? signUp() : Promise.resolve(new Response(null, { status: 401 })),
   )
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
 }
 
-function submitSignUp(email: string, password: string) {
-  fireEvent.change(screen.getByLabelText('Correo electrónico'), { target: { value: email } })
-  fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: password } })
-  fireEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }))
+function signUpForm() {
+  return within(screen.getByRole('form', { name: 'Crear cuenta' }))
 }
+
+async function submitSignUp(email: string, password: string) {
+  await screen.findByRole('form', { name: 'Crear cuenta' })
+  fireEvent.change(signUpForm().getByLabelText('Correo electrónico'), { target: { value: email } })
+  fireEvent.change(signUpForm().getByLabelText('Contraseña'), { target: { value: password } })
+  fireEvent.click(signUpForm().getByRole('button', { name: 'Crear cuenta' }))
+}
+
+it('shows the log-in form when there is no session', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 401 })))
+
+  const { container } = render(<App />)
+
+  await screen.findByRole('form', { name: 'Iniciar sesión' })
+  expect(container.querySelector('input[type="file"]')).toBeNull()
+})
+
+it('shows the importer and the stored transactions when there is a session', async () => {
+  stubApi(() => Promise.reject(new Error('no upload expected')), [
+    { date: '2025-01-10', description: 'COMPRA', amount: -23.45, balance: 1000 },
+  ])
+
+  const { container } = render(<App />)
+
+  await screen.findByRole('table')
+  expect(container.querySelector('input[type="file"]')).not.toBeNull()
+  expect(screen.queryByRole('form', { name: 'Iniciar sesión' })).toBeNull()
+  expect(screen.queryByRole('form', { name: 'Crear cuenta' })).toBeNull()
+})
+
+it('shows the importer after logging in', async () => {
+  let loggedIn = false
+  const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+    if (url === '/api/session' && init?.method === 'POST') {
+      loggedIn = true
+      return Promise.resolve(new Response(null, { status: 200 }))
+    }
+    return Promise.resolve(
+      loggedIn
+        ? Response.json([{ date: '2025-01-10', description: 'COMPRA', amount: -23.45, balance: 1000 }])
+        : new Response(null, { status: 401 }),
+    )
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  const { container } = render(<App />)
+  const form = within(await screen.findByRole('form', { name: 'Iniciar sesión' }))
+
+  fireEvent.change(form.getByLabelText('Correo electrónico'), { target: { value: 'ana@example.com' } })
+  fireEvent.change(form.getByLabelText('Contraseña'), { target: { value: 'a-long-password' } })
+  fireEvent.click(form.getByRole('button', { name: 'Iniciar sesión' }))
+
+  await screen.findByRole('table')
+  expect(container.querySelector('input[type="file"]')).not.toBeNull()
+  expect(screen.queryByRole('form', { name: 'Iniciar sesión' })).toBeNull()
+  const [, init] = fetchMock.mock.calls.find(([url]) => url === '/api/session')!
+  expect(new Headers(init?.headers).get('Content-Type')).toBe('application/json')
+  expect(JSON.parse(init?.body as string)).toEqual({ email: 'ana@example.com', password: 'a-long-password' })
+})
+
+function stubLogIn(logIn: () => Promise<Response>) {
+  const fetchMock = vi.fn((url: string, init?: RequestInit) =>
+    url === '/api/session' && init?.method === 'POST' ? logIn() : Promise.resolve(new Response(null, { status: 401 })),
+  )
+  vi.stubGlobal('fetch', fetchMock)
+  return fetchMock
+}
+
+async function submitLogIn(email: string, password: string) {
+  const form = within(await screen.findByRole('form', { name: 'Iniciar sesión' }))
+  fireEvent.change(form.getByLabelText('Correo electrónico'), { target: { value: email } })
+  fireEvent.change(form.getByLabelText('Contraseña'), { target: { value: password } })
+  fireEvent.click(form.getByRole('button', { name: 'Iniciar sesión' }))
+}
+
+it('shows an error when the credentials are not valid', async () => {
+  stubLogIn(() => Promise.resolve(Response.json({ error: 'InvalidCredentials' }, { status: 401 })))
+  render(<App />)
+
+  await submitLogIn('ana@example.com', 'not-the-password')
+
+  const alert = await screen.findByRole('alert')
+  expect(alert.textContent).toBe('El correo electrónico o la contraseña no son válidos')
+  expect(screen.queryByRole('table')).toBeNull()
+  expect(screen.getByRole('form', { name: 'Iniciar sesión' })).not.toBeNull()
+})
+
+it('shows a generic error when logging in fails because the server is unreachable', async () => {
+  stubLogIn(() => Promise.reject(new TypeError('Failed to fetch')))
+  render(<App />)
+
+  await submitLogIn('ana@example.com', 'a-long-password')
+
+  const alert = await screen.findByRole('alert')
+  expect(alert.textContent).toBe('No se pudo iniciar sesión')
+})
+
+it('shows a generic error when the log-in response has an unknown error code or is not JSON', async () => {
+  const responses = [Response.json({ error: 'SomethingElse' }, { status: 500 }), new Response('<html lang="en">Error</html>', { status: 500 })]
+  stubLogIn(() => Promise.resolve(responses.shift()!))
+  render(<App />)
+
+  await submitLogIn('ana@example.com', 'a-long-password')
+  expect((await screen.findByRole('alert')).textContent).toBe('No se pudo iniciar sesión')
+  cleanup()
+  render(<App />)
+  await submitLogIn('ana@example.com', 'a-long-password')
+
+  expect((await screen.findByRole('alert')).textContent).toBe('No se pudo iniciar sesión')
+})
+
+it('shows the log-in form after logging out', async () => {
+  const fetchMock = vi.fn((_url: string, init?: RequestInit) =>
+    init?.method === 'DELETE'
+      ? Promise.resolve(new Response(null, { status: 204 }))
+      : Promise.resolve(Response.json([{ date: '2025-01-10', description: 'COMPRA', amount: -23.45, balance: 1000 }])),
+  )
+  vi.stubGlobal('fetch', fetchMock)
+  const { container } = render(<App />)
+  await screen.findByRole('table')
+
+  fireEvent.click(screen.getByRole('button', { name: 'Cerrar sesión' }))
+
+  await screen.findByRole('form', { name: 'Iniciar sesión' })
+  expect(screen.queryByRole('table')).toBeNull()
+  expect(container.querySelector('input[type="file"]')).toBeNull()
+  const [url] = fetchMock.mock.calls.find(([, init]) => init?.method === 'DELETE')!
+  expect(url).toBe('/api/session')
+})
 
 it('shows a confirmation when the sign-up succeeds', async () => {
   stubSignUp(() => Promise.resolve(new Response(null, { status: 201 })))
   render(<App />)
 
-  submitSignUp('ana@example.com', 'a-long-password')
+  await submitSignUp('ana@example.com', 'a-long-password')
 
   const confirmation = await screen.findByRole('status')
   expect(confirmation.textContent).toBe('Cuenta creada correctamente')
@@ -51,7 +177,7 @@ it('sends the typed email and password when the sign-up form is submitted', asyn
   const fetchMock = stubSignUp(() => Promise.resolve(new Response(null, { status: 201 })))
   render(<App />)
 
-  submitSignUp('ana@example.com', 'a-long-password')
+  await submitSignUp('ana@example.com', 'a-long-password')
 
   await screen.findByRole('status')
   const [, init] = fetchMock.mock.calls.find(([url]) => url === '/api/users')!
@@ -64,10 +190,10 @@ it('shows that the email is already in use when the API reports it', async () =>
   stubSignUp(() => Promise.resolve(Response.json({ error: 'EmailAlreadyRegistered' }, { status: 409 })))
   render(<App />)
 
-  submitSignUp('ana@example.com', 'a-long-password')
+  await submitSignUp('ana@example.com', 'a-long-password')
 
   const message = await screen.findByText('Ese correo electrónico ya está en uso')
-  const emailField = screen.getByLabelText('Correo electrónico')
+  const emailField = signUpForm().getByLabelText('Correo electrónico')
   expect(emailField.getAttribute('aria-invalid')).toBe('true')
   expect(emailField.getAttribute('aria-describedby')).toBe(message.id)
   expect(screen.queryByRole('status')).toBeNull()
@@ -77,10 +203,10 @@ it('shows that the email is invalid when the API reports it', async () => {
   stubSignUp(() => Promise.resolve(Response.json({ error: 'InvalidEmail' }, { status: 400 })))
   render(<App />)
 
-  submitSignUp('ana.example.com', 'a-long-password')
+  await submitSignUp('ana.example.com', 'a-long-password')
 
   const message = await screen.findByText('El correo electrónico no es válido')
-  const emailField = screen.getByLabelText('Correo electrónico')
+  const emailField = signUpForm().getByLabelText('Correo electrónico')
   expect(emailField.getAttribute('aria-invalid')).toBe('true')
   expect(emailField.getAttribute('aria-describedby')).toBe(message.id)
   expect(screen.queryByRole('status')).toBeNull()
@@ -90,13 +216,13 @@ it('shows that the password is too short when the API reports it', async () => {
   stubSignUp(() => Promise.resolve(Response.json({ error: 'InvalidPassword' }, { status: 400 })))
   render(<App />)
 
-  submitSignUp('ana@example.com', '1234567')
+  await submitSignUp('ana@example.com', '1234567')
 
   const message = await screen.findByText('La contraseña debe tener entre 8 y 128 caracteres')
-  const passwordField = screen.getByLabelText('Contraseña')
+  const passwordField = signUpForm().getByLabelText('Contraseña')
   expect(passwordField.getAttribute('aria-invalid')).toBe('true')
   expect(passwordField.getAttribute('aria-describedby')).toBe(message.id)
-  expect(screen.getByLabelText('Correo electrónico').getAttribute('aria-invalid')).not.toBe('true')
+  expect(signUpForm().getByLabelText('Correo electrónico').getAttribute('aria-invalid')).not.toBe('true')
   expect(screen.queryByRole('status')).toBeNull()
 })
 
@@ -104,12 +230,12 @@ it('shows a generic error when the sign-up fails with an unknown code', async ()
   stubSignUp(() => Promise.resolve(Response.json({ error: 'SomethingElse' }, { status: 500 })))
   render(<App />)
 
-  submitSignUp('ana@example.com', 'a-long-password')
+  await submitSignUp('ana@example.com', 'a-long-password')
 
   const alert = await screen.findByRole('alert')
   expect(alert.textContent).toBe('No se pudo crear la cuenta')
-  expect(screen.getByLabelText('Correo electrónico').getAttribute('aria-invalid')).not.toBe('true')
-  expect(screen.getByLabelText('Contraseña').getAttribute('aria-invalid')).not.toBe('true')
+  expect(signUpForm().getByLabelText('Correo electrónico').getAttribute('aria-invalid')).not.toBe('true')
+  expect(signUpForm().getByLabelText('Contraseña').getAttribute('aria-invalid')).not.toBe('true')
   expect(screen.queryByRole('status')).toBeNull()
 })
 
@@ -117,7 +243,7 @@ it('shows a generic error when the sign-up request fails because the server is u
   stubSignUp(() => Promise.reject(new TypeError('Failed to fetch')))
   render(<App />)
 
-  submitSignUp('ana@example.com', 'a-long-password')
+  await submitSignUp('ana@example.com', 'a-long-password')
 
   const alert = await screen.findByRole('alert')
   expect(alert.textContent).toBe('No se pudo crear la cuenta')
@@ -128,7 +254,7 @@ it('shows a generic error when the sign-up response is not JSON', async () => {
   stubSignUp(() => Promise.resolve(new Response('<html lang="en">Internal Server Error</html>', { status: 500 })))
   render(<App />)
 
-  submitSignUp('ana@example.com', 'a-long-password')
+  await submitSignUp('ana@example.com', 'a-long-password')
 
   const alert = await screen.findByRole('alert')
   expect(alert.textContent).toBe('No se pudo crear la cuenta')
@@ -138,24 +264,24 @@ it('clears the previous error when the sign-up form is submitted again and succe
   const responses = [Response.json({ error: 'EmailAlreadyRegistered' }, { status: 409 }), new Response(null, { status: 201 })]
   stubSignUp(() => Promise.resolve(responses.shift()!))
   render(<App />)
-  submitSignUp('ana@example.com', 'a-long-password')
+  await submitSignUp('ana@example.com', 'a-long-password')
   await screen.findByText('Ese correo electrónico ya está en uso')
 
-  submitSignUp('luis@example.com', 'a-long-password')
+  await submitSignUp('luis@example.com', 'a-long-password')
 
   await screen.findByRole('status')
   expect(screen.queryByText('Ese correo electrónico ya está en uso')).toBeNull()
-  expect(screen.getByLabelText('Correo electrónico').getAttribute('aria-invalid')).not.toBe('true')
+  expect(signUpForm().getByLabelText('Correo electrónico').getAttribute('aria-invalid')).not.toBe('true')
 })
 
 it('clears the previous confirmation when the sign-up form is submitted again and fails', async () => {
   const responses = [new Response(null, { status: 201 }), Response.json({ error: 'EmailAlreadyRegistered' }, { status: 409 })]
   stubSignUp(() => Promise.resolve(responses.shift()!))
   render(<App />)
-  submitSignUp('ana@example.com', 'a-long-password')
+  await submitSignUp('ana@example.com', 'a-long-password')
   await screen.findByRole('status')
 
-  submitSignUp('ana@example.com', 'a-long-password')
+  await submitSignUp('ana@example.com', 'a-long-password')
 
   await screen.findByText('Ese correo electrónico ya está en uso')
   expect(screen.queryByRole('status')).toBeNull()
@@ -165,10 +291,10 @@ it('sends only one request while a sign-up is in progress and enables the button
   let finish!: (response: Response) => void
   const fetchMock = stubSignUp(() => new Promise<Response>((resolve) => (finish = resolve)))
   render(<App />)
-  const button = screen.getByRole('button', { name: 'Crear cuenta' }) as HTMLButtonElement
+  const button = (await screen.findByRole('button', { name: 'Crear cuenta' })) as HTMLButtonElement
 
-  submitSignUp('ana@example.com', 'a-long-password')
-  submitSignUp('ana@example.com', 'a-long-password')
+  await submitSignUp('ana@example.com', 'a-long-password')
+  await submitSignUp('ana@example.com', 'a-long-password')
 
   expect(button.disabled).toBe(true)
   expect(fetchMock.mock.calls.filter(([url]) => url === '/api/users')).toHaveLength(1)

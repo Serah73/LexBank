@@ -20,11 +20,13 @@ Run from the repository root.
   `UploadStatement` returns `UploadStatementResult` (including `SkippedTransactions`), not the reader's result: the reader knows nothing about duplicates.
 - **Infrastructure:** implementations of those interfaces. Third-party libraries (ClosedXML, EF Core, `Microsoft.Extensions.Identity.Core` for password hashing in `IdentityPasswordHasher`) are used only here.
 - **Api:** minimal API endpoints and dependency injection, all in `Program.cs`. Endpoints call a use case or a repository; they hold no business logic. The exceptions a use case throws (`InvalidEmailException`, `EmailAlreadyRegisteredException`...) are mapped to status codes and error codes in `Program.cs`.
+  Authentication is a session cookie (ADR-0007): it carries the user's email, and the protected endpoints read it from the `ClaimsPrincipal`. `/api/users` and `/api/session` stay open.
 
 ## Conventions
 
 - **Codes, not text:** responses carry stable codes (enum names serialized as strings, error codes such as `NotRuralviaStatement`). Never return user-facing messages; the frontend translates them in `src/frontend/src/messages.ts`. A new code needs its translation there.
 - **Persistence:** `Transaction` has no id property; `Id` is an EF Core shadow property. Do not add persistence concerns to Domain types.
+- **Data per user:** `ITransactionRepository` always receives the user's email; `Transaction.UserId` is a shadow property like `Id`. A new endpoint that reads or writes transactions must be protected and must pass the email of the session.
 - **Passwords:** never store or log one in clear. `User` overrides `PrintMembers` so its `ToString()` hides the hash; keep it when changing the record.
 - **Users table:** `Users.Email` has a unique index; a model change that breaks the development database is fixed by dropping and recreating it.
 - **Listing order:** transactions are listed by `Date DESC, Id ASC`.
@@ -36,6 +38,7 @@ Run from the repository root.
 - xUnit. Test names follow `Method_Scenario_ExpectedResult`.
 - Database tests run against real SQL Server LocalDB, never the EF in-memory provider (ADR-0006). Each test creates its own database with a unique name and drops it on dispose; follow `LexBankApiFactory` and `EfTransactionRepositoryTests`.
 - API tests use `LexBankApiFactory` (`WebApplicationFactory<Program>`). To control what the reader returns, register `StubStatementReader` with `WithWebHostBuilder`.
+- Tests of a protected endpoint start with `await client.LogInAsync()` (`HttpClientSessionExtensions`), which signs up and logs in; the client keeps the cookie. Pass another email to get a second user.
 - Statement fixtures live in `tests/backend/LexBank.Infrastructure.Tests/Fixtures`; the Api tests link the same file instead of copying it.
 - `data/` holds real personal bank statements and is git-ignored. Never copy its contents into fixtures, tests, code or documentation.
 - LocalDB exists only on Windows; the CI job runs on `windows-latest` for that reason.

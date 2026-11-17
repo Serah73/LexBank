@@ -13,6 +13,8 @@ public class LexBankDbContext(DbContextOptions<LexBankDbContext> options) : DbCo
             transaction.HasKey("Id");
             transaction.Property(t => t.Amount).HasPrecision(18, 2);
             transaction.Property(t => t.Balance).HasPrecision(18, 2);
+            transaction.Property<int>("UserId");
+            transaction.HasOne<User>().WithMany().HasForeignKey("UserId").IsRequired();
         });
 
         modelBuilder.Entity<User>(user =>
