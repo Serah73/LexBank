@@ -1,0 +1,9 @@
+Tipo,Producto,Fecha de inicio,Fecha de finalización,Descripción,Importe,Comisión,Divisa,State,Saldo
+Pago con tarjeta,Actual,2025-01-10 09:15:00,2025-01-11 00:00:00,Supermercado Ejemplo,-23.45,0.00,EUR,COMPLETADO,1000.00
+Transferencia,Actual,2025-01-11 10:00:00,2025-01-11 10:00:00,"Nomina, Empresa Ejemplo",1500.00,0.00,EUR,COMPLETADO,2476.55
+Cajero,Actual,2025-01-12 12:00:00,2025-01-12 12:00:00,Cajero Ejemplo,-50.00,1.50,EUR,COMPLETADO,2425.05
+Interés,Depósito,2025-01-12 13:00:00,2025-01-12 13:00:00,Interés ejemplo,0.50,0.10,EUR,COMPLETADO,500.50
+Pago con tarjeta,Actual,2025-01-13 08:00:00,2025-01-13 08:00:00,Pago pendiente,-5.00,0.00,EUR,PENDIENTE,2420.05
+Pago con tarjeta,Actual,sin-fecha,sin-fecha,Fila con fecha ilegible,-1.00,0.00,EUR,COMPLETADO,2424.05
+Pago con tarjeta,Actual,2025-01-14 08:00:00,2025-01-14 08:00:00,Fila con importe ilegible,abc,0.00,EUR,COMPLETADO,2424.05
+Pago con tarjeta,Actual,2025-01-15 08:00:00,2025-01-15 08:00:00,Fila con saldo ilegible,-1.00,0.00,EUR,COMPLETADO,xyz
