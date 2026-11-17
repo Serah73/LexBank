@@ -9,16 +9,13 @@ public class RevolutCsvReader : IStatementReader
 {
     private const string NotRevolutMessage = "The file is not a Revolut CSV statement";
 
-    private static readonly string[] RequiredHeaders =
-        ["Producto", "Fecha de inicio", "Descripcion", "Importe", "Comision", "State", "Saldo"];
-
     public bool CanRead(string fileName) =>
         string.Equals(Path.GetExtension(fileName), ".csv", StringComparison.OrdinalIgnoreCase);
 
     public StatementReadResult Read(Stream stream)
     {
         using var reader = new StreamReader(stream);
-        var columns = FindColumns(Normalize(reader.ReadLine()), out var fieldCount);
+        var columns = FindColumns(Normalize(reader.ReadLine()));
 
         var transactions = new List<Transaction>();
         var failedRows = new List<FailedRow>();
@@ -32,44 +29,55 @@ public class RevolutCsvReader : IStatementReader
             }
 
             var fields = SplitFields(line);
-            if (fields.Count < fieldCount)
+            if (fields.Count < columns.FieldCount)
             {
                 throw new UnsupportedStatementException(
-                    $"Line {lineNumber} of the Revolut CSV has {fields.Count} fields but the header has {fieldCount}");
+                    $"Line {lineNumber} of the Revolut CSV has {fields.Count} fields but the header has {columns.FieldCount}");
             }
 
-            if (fields[columns["Producto"]] != "Actual" || fields[columns["State"]] != "COMPLETADO")
+            if (fields[columns.Product] != "Actual" || fields[columns.State] != "COMPLETADO")
             {
                 continue;
             }
 
-            if (!DateTime.TryParseExact(fields[columns["Fecha de inicio"]], "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+            var failure = TryParseRow(fields, columns, lineNumber, out var transaction);
+            if (failure is null)
             {
-                failedRows.Add(new FailedRow(lineNumber, FailedRowReason.InvalidDate));
-                continue;
+                transactions.Add(transaction!);
             }
-
-            if (!TryParseDecimal(fields[columns["Importe"]], out var grossAmount)
-                || !TryParseDecimal(fields[columns["Comision"]], out var fee))
+            else
             {
-                failedRows.Add(new FailedRow(lineNumber, FailedRowReason.InvalidAmount));
-                continue;
+                failedRows.Add(failure);
             }
-
-            if (!TryParseDecimal(fields[columns["Saldo"]], out var balance))
-            {
-                failedRows.Add(new FailedRow(lineNumber, FailedRowReason.InvalidBalance));
-                continue;
-            }
-
-            transactions.Add(new Transaction(
-                DateOnly.FromDateTime(date), fields[columns["Descripcion"]], grossAmount - fee, balance));
         }
 
         return new StatementReadResult(transactions, failedRows);
     }
 
-    private static Dictionary<string, int> FindColumns(string? header, out int fieldCount)
+    private static FailedRow? TryParseRow(List<string> fields, Columns columns, int lineNumber, out Transaction? transaction)
+    {
+        transaction = null;
+
+        if (!DateTime.TryParseExact(fields[columns.Start], "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+        {
+            return new FailedRow(lineNumber, FailedRowReason.InvalidDate);
+        }
+
+        if (!TryParseDecimal(fields[columns.Amount], out var amount) || !TryParseDecimal(fields[columns.Fee], out var fee))
+        {
+            return new FailedRow(lineNumber, FailedRowReason.InvalidAmount);
+        }
+
+        if (!TryParseDecimal(fields[columns.Balance], out var balance))
+        {
+            return new FailedRow(lineNumber, FailedRowReason.InvalidBalance);
+        }
+
+        transaction = new Transaction(DateOnly.FromDateTime(date), fields[columns.Description], amount - fee, balance);
+        return null;
+    }
+
+    private static Columns FindColumns(string? header)
     {
         if (header is null)
         {
@@ -77,13 +85,13 @@ public class RevolutCsvReader : IStatementReader
         }
 
         var names = SplitFields(header);
-        if (!RequiredHeaders.All(names.Contains))
-        {
-            throw new UnsupportedStatementException(NotRevolutMessage);
-        }
 
-        fieldCount = names.Count;
-        return RequiredHeaders.ToDictionary(name => name, name => names.IndexOf(name));
+        int Find(string name) =>
+            names.IndexOf(name) is var index and >= 0 ? index : throw new UnsupportedStatementException(NotRevolutMessage);
+
+        return new Columns(
+            Find("Producto"), Find("Fecha de inicio"), Find("Descripcion"), Find("Importe"),
+            Find("Comision"), Find("State"), Find("Saldo"), names.Count);
     }
 
     private static string? Normalize(string? line) =>
@@ -120,4 +128,7 @@ public class RevolutCsvReader : IStatementReader
         fields.Add(field.ToString());
         return fields;
     }
+
+    private sealed record Columns(
+        int Product, int Start, int Description, int Amount, int Fee, int State, int Balance, int FieldCount);
 }
