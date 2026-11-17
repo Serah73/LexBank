@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <Content Include="..\LexBank.Infrastructure.Tests\Fixtures\ruralvia.xlsx" Link="Fixtures\ruralvia.xlsx" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\LexBank.Infrastructure.Tests\Fixtures\revolut.csv" Link="Fixtures\revolut.csv" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

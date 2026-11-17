@@ -13,6 +13,9 @@ public class RuralviaXlsxReader : IStatementReader
     private static readonly string[] ExpectedHeaders =
         ["Fecha de la operación", "Fecha valor", "Tipo movimiento", "Importe", "Saldo"];
 
+    public bool CanRead(string fileName) =>
+        string.Equals(Path.GetExtension(fileName), ".xlsx", StringComparison.OrdinalIgnoreCase);
+
     public StatementReadResult Read(Stream stream)
     {
         using var workbook = Open(stream);

@@ -12,6 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IStatementReader, RuralviaXlsxReader>();
+builder.Services.AddScoped<IStatementReader, RevolutCsvReader>();
 builder.Services.AddDbContext<LexBankDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("LexBank")));
 builder.Services.AddScoped<ITransactionRepository, EfTransactionRepository>();
@@ -66,11 +67,11 @@ app.MapPost("/api/statements", async (IFormFile file, ClaimsPrincipal user, Uplo
     using var stream = file.OpenReadStream();
     try
     {
-        return Results.Ok(await uploadStatement.ExecuteAsync(user.FindFirstValue(ClaimTypes.Email)!, stream));
+        return Results.Ok(await uploadStatement.ExecuteAsync(user.FindFirstValue(ClaimTypes.Email)!, file.FileName, stream));
     }
     catch (UnsupportedStatementException)
     {
-        return Results.BadRequest(new { error = "NotRuralviaStatement" });
+        return Results.BadRequest(new { error = "UnsupportedStatement" });
     }
 }).DisableAntiforgery().RequireAuthorization();
 
