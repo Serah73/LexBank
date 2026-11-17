@@ -1,6 +1,6 @@
 export type FailedRowReason = 'InvalidDate' | 'InvalidAmount' | 'InvalidBalance'
 
-export type StatementError = 'NotRuralviaStatement' | 'ProcessingFailed'
+export type StatementError = 'UnsupportedStatement' | 'ProcessingFailed'
 
 export type SignUpError = 'EmailAlreadyRegistered' | 'InvalidEmail' | 'InvalidPassword' | 'SignUpFailed'
 
@@ -25,6 +25,6 @@ export const signUpErrorMessages: Record<SignUpError, string> = {
 }
 
 export const statementErrorMessages: Record<StatementError, string> = {
-  NotRuralviaStatement: 'El fichero no es un extracto XLSX de Ruralvía',
+  UnsupportedStatement: 'El formato del fichero no es compatible',
   ProcessingFailed: 'No se pudo procesar el fichero',
 }

@@ -110,7 +110,7 @@ function App() {
           <button type="button" onClick={handleLogOut}>
             Cerrar sesión
           </button>
-          <input type="file" accept=".xlsx" onChange={handleFileChange} />
+          <input type="file" accept=".xlsx,.csv" onChange={handleFileChange} />
         </>
       )}
       {error && <p role="alert">{statementErrorMessages[error]}</p>}

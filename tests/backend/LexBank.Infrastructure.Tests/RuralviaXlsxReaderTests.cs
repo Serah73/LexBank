@@ -27,6 +27,16 @@ public class RuralviaXlsxReaderTests
             result.Transactions);
     }
 
+    [Theory]
+    [InlineData("statement.xlsx", true)]
+    [InlineData("STATEMENT.XLSX", true)]
+    [InlineData("statement.csv", false)]
+    [InlineData("statement", false)]
+    public void CanRead_FileName_IsTrueOnlyForXlsxExtension(string fileName, bool expected)
+    {
+        Assert.Equal(expected, new RuralviaXlsxReader().CanRead(fileName));
+    }
+
     [Fact]
     public void Read_RowWithInvalidDate_ReturnsFailedRowWithRowNumberAndReason()
     {

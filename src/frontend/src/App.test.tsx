@@ -418,13 +418,22 @@ it('does not replace an uploaded statement with a late response to the initial l
   expect(screen.getAllByRole('cell').map((c) => c.textContent)).toEqual(['2025-01-10', 'COMPRA', '-23.45', '1000'])
 })
 
+it('tells the user the format is not supported when the file is not a known statement', async () => {
+  stubApi(() => Promise.resolve(Response.json({ error: 'UnsupportedStatement' }, { status: 400 })))
+  const { container } = render(<App />)
+
+  uploadFile(container)
+
+  expect((await screen.findByRole('alert')).textContent).toBe('El formato del fichero no es compatible')
+})
+
 it('does not show stored transactions from a late initial load after a rejected upload', async () => {
   let resolveStored!: (response: Response) => void
   vi.stubGlobal(
     'fetch',
     vi.fn((_url: string, init?: RequestInit) =>
       init?.method === 'POST'
-        ? Promise.resolve(Response.json({ error: 'NotRuralviaStatement' }, { status: 400 }))
+        ? Promise.resolve(Response.json({ error: 'UnsupportedStatement' }, { status: 400 }))
         : new Promise<Response>((resolve) => {
             resolveStored = resolve
           }),
@@ -526,7 +535,7 @@ it('clears the skipped message when a later upload fails', async () => {
             skippedTransactions: 2,
           }),
         )
-      : Promise.resolve(Response.json({ error: 'NotRuralviaStatement' }, { status: 400 })),
+      : Promise.resolve(Response.json({ error: 'UnsupportedStatement' }, { status: 400 })),
   )
   const { container } = render(<App />)
   uploadFile(container)
