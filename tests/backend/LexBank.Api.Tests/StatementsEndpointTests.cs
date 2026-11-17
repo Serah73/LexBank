@@ -5,6 +5,7 @@ using LexBank.Application;
 using LexBank.Domain;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace LexBank.Api.Tests;
 
@@ -34,13 +35,24 @@ public class StatementsEndpointTests : IAsyncLifetime
         return new MultipartFormDataContent { { file, "file", "ruralvia.xlsx" } };
     }
 
+    private static MultipartFormDataContent RevolutFixtureUpload()
+    {
+        var file = new StreamContent(File.OpenRead(Path.Combine(AppContext.BaseDirectory, "Fixtures", "revolut.csv")));
+        file.Headers.ContentType = new MediaTypeHeaderValue("text/csv");
+        return new MultipartFormDataContent { { file, "file", "revolut.csv" } };
+    }
+
     private static MultipartFormDataContent AnyFileUpload() =>
         new() { { new ByteArrayContent("any content"u8.ToArray()), "file", "statement.xlsx" } };
 
     private async Task<HttpClient> ClientReadingWithAsync(IStatementReader reader)
     {
         var client = _factory.WithWebHostBuilder(builder =>
-            builder.ConfigureServices(services => services.AddSingleton(reader))).CreateClient();
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IStatementReader>();
+                services.AddSingleton(reader);
+            })).CreateClient();
         await client.LogInAsync();
         return client;
     }
@@ -62,6 +74,46 @@ public class StatementsEndpointTests : IAsyncLifetime
         Assert.Equal(-23.45m, first.GetProperty("amount").GetDecimal());
         Assert.False(first.TryGetProperty("currency", out _));
         Assert.Equal(1000.00m, first.GetProperty("balance").GetDecimal());
+    }
+
+    [Fact]
+    public async Task Upload_RevolutCsv_ReturnsTheCompletedCurrentAccountTransactions()
+    {
+        using var content = RevolutFixtureUpload();
+
+        var response = await _client.PostAsync("/api/statements", content);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var transactions = body.RootElement.GetProperty("transactions").EnumerateArray()
+            .Select(t => (t.GetProperty("date").GetString(), t.GetProperty("description").GetString(),
+                t.GetProperty("amount").GetDecimal(), t.GetProperty("balance").GetDecimal()))
+            .ToArray();
+        Assert.Equal(
+            new (string?, string?, decimal, decimal)[]
+            {
+                ("2025-01-10", "Supermercado Ejemplo", -23.45m, 1000.00m),
+                ("2025-01-11", "Nomina, Empresa Ejemplo", 1500.00m, 2476.55m),
+                ("2025-01-12", "Cajero Ejemplo", -51.50m, 2425.05m),
+            },
+            transactions);
+    }
+
+    [Fact]
+    public async Task Upload_RevolutCsvWithUnreadableRows_ReturnsThemAsFailedRows()
+    {
+        using var content = RevolutFixtureUpload();
+
+        var response = await _client.PostAsync("/api/statements", content);
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var failedRows = body.RootElement.GetProperty("failedRows")
+            .EnumerateArray()
+            .Select(r => (r.GetProperty("rowNumber").GetInt32(), r.GetProperty("reason").GetString()))
+            .ToArray();
+        Assert.Equal(
+            new (int, string?)[] { (7, "InvalidDate"), (8, "InvalidAmount"), (9, "InvalidBalance") },
+            failedRows);
     }
 
     [Fact]
@@ -277,7 +329,7 @@ public class StatementsEndpointTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Upload_FileThatIsNotRuralviaXlsx_SavesNothing()
+    public async Task Upload_UnsupportedFile_SavesNothing()
     {
         using var content = new MultipartFormDataContent
         {
@@ -311,7 +363,7 @@ public class StatementsEndpointTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Upload_FileThatIsNotRuralviaXlsx_ReturnsBadRequestWithReasonAndNoTransactions()
+    public async Task Upload_UnsupportedFile_ReturnsBadRequestWithUnsupportedStatementCodeAndNoTransactions()
     {
         using var content = new MultipartFormDataContent
         {
@@ -322,7 +374,7 @@ public class StatementsEndpointTests : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        Assert.Equal("NotRuralviaStatement", body.RootElement.GetProperty("error").GetString());
+        Assert.Equal("UnsupportedStatement", body.RootElement.GetProperty("error").GetString());
         Assert.False(body.RootElement.TryGetProperty("transactions", out _));
     }
 }
