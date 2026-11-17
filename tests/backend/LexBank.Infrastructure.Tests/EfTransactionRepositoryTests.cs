@@ -5,6 +5,8 @@ namespace LexBank.Infrastructure.Tests;
 
 public class EfTransactionRepositoryTests : IDisposable
 {
+    private const string Email = "ana@example.com";
+
     private readonly LexBankDbContext _context;
 
     public EfTransactionRepositoryTests()
@@ -14,6 +16,8 @@ public class EfTransactionRepositoryTests : IDisposable
             .Options;
         _context = new LexBankDbContext(options);
         _context.Database.EnsureCreated();
+        _context.Set<User>().Add(new User(Email, "hash"));
+        _context.SaveChanges();
     }
 
     public void Dispose()
@@ -27,7 +31,7 @@ public class EfTransactionRepositoryTests : IDisposable
     {
         var repository = new EfTransactionRepository(_context);
 
-        var stored = await repository.ListAsync();
+        var stored = await repository.ListAsync(Email);
 
         Assert.Empty(stored);
     }
@@ -37,14 +41,14 @@ public class EfTransactionRepositoryTests : IDisposable
     {
         var repository = new EfTransactionRepository(_context);
 
-        await repository.AddAsync([new Transaction(new DateOnly(2025, 1, 5), "ENERO", 10.00m, 100.00m)]);
-        await repository.AddAsync(
+        await repository.AddAsync(Email, [new Transaction(new DateOnly(2025, 1, 5), "ENERO", 10.00m, 100.00m)]);
+        await repository.AddAsync(Email,
         [
             new Transaction(new DateOnly(2025, 3, 5), "MARZO PRIMERO", 20.00m, 120.00m),
             new Transaction(new DateOnly(2025, 3, 5), "MARZO SEGUNDO", 5.00m, 125.00m),
         ]);
-        await repository.AddAsync([new Transaction(new DateOnly(2025, 2, 5), "FEBRERO", 30.00m, 90.00m)]);
-        var stored = await repository.ListAsync();
+        await repository.AddAsync(Email, [new Transaction(new DateOnly(2025, 2, 5), "FEBRERO", 30.00m, 90.00m)]);
+        var stored = await repository.ListAsync(Email);
 
         Assert.Equal(["MARZO PRIMERO", "MARZO SEGUNDO", "FEBRERO", "ENERO"], stored.Select(t => t.Description));
     }
@@ -54,12 +58,12 @@ public class EfTransactionRepositoryTests : IDisposable
     {
         var repository = new EfTransactionRepository(_context);
 
-        await repository.AddAsync(
+        await repository.AddAsync(Email,
         [
             new Transaction(new DateOnly(2025, 1, 10), "COMPRA SUPERMERCADO EJEMPLO", -23.45m, 1000.00m),
             new Transaction(new DateOnly(2025, 1, 11), "NOMINA EMPRESA EJEMPLO", 1500.00m, 2476.55m),
         ]);
-        var stored = await repository.ListAsync();
+        var stored = await repository.ListAsync(Email);
 
         Assert.Equal(
             new[]

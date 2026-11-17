@@ -31,4 +31,26 @@ public class EfUserRepositoryTests : IDisposable
         await Assert.ThrowsAsync<DbUpdateException>(() =>
             repository.AddAsync(new User("ana@example.com", "hash-2")));
     }
+
+    [Fact]
+    public async Task FindByEmailAsync_EmailStored_ReturnsTheUser()
+    {
+        var repository = new EfUserRepository(_context);
+        await repository.AddAsync(new User("ana@example.com", "hash-1"));
+
+        var user = await repository.FindByEmailAsync("ana@example.com");
+
+        Assert.Equal(new User("ana@example.com", "hash-1"), user);
+    }
+
+    [Fact]
+    public async Task FindByEmailAsync_EmailNotStored_ReturnsNull()
+    {
+        var repository = new EfUserRepository(_context);
+        await repository.AddAsync(new User("ana@example.com", "hash-1"));
+
+        var user = await repository.FindByEmailAsync("luis@example.com");
+
+        Assert.Null(user);
+    }
 }

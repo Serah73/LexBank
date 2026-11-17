@@ -4,7 +4,7 @@ namespace LexBank.Application;
 
 public interface ITransactionRepository
 {
-    Task AddAsync(IEnumerable<Transaction> transactions);
+    Task AddAsync(string email, IEnumerable<Transaction> transactions);
 
-    Task<IReadOnlyList<Transaction>> ListAsync();
+    Task<IReadOnlyList<Transaction>> ListAsync(string email);
 }

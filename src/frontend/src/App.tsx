@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ChangeEvent, FormEvent } from 'react'
-import { failedRowMessages, signUpErrorMessages, statementErrorMessages } from './messages'
-import type { FailedRowReason, SignUpError, StatementError } from './messages'
+import type { ChangeEvent } from 'react'
+import LogInForm from './LogInForm'
+import { failedRowMessages, statementErrorMessages } from './messages'
+import type { FailedRowReason, StatementError } from './messages'
+import SignUpForm from './SignUpForm'
 
 interface Transaction {
   date: string
@@ -15,27 +17,38 @@ interface FailedRow {
   reason: FailedRowReason
 }
 
+// Resolves to null when there is no session (the API answers 401).
+async function fetchStoredTransactions(): Promise<Transaction[] | null> {
+  const response = await fetch('/api/transactions')
+  return response.status === 401 ? null : response.json()
+}
+
 function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [failedRows, setFailedRows] = useState<FailedRow[]>([])
   const [error, setError] = useState<StatementError | null>(null)
   const [skipped, setSkipped] = useState(0)
-  const [signedUp, setSignedUp] = useState(false)
-  const [signingUp, setSigningUp] = useState(false)
-  const [signUpError, setSignUpError] = useState<SignUpError | null>(null)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [signedOut, setSignedOut] = useState(false)
 
   const uploaded = useRef(false)
 
   useEffect(() => {
-    fetch('/api/transactions')
-      .then((response) => response.json())
+    fetchStoredTransactions()
       .then((stored) => {
-        if (!uploaded.current) setTransactions(stored)
+        if (stored === null) setSignedOut(true)
+        else if (!uploaded.current) setTransactions(stored)
       })
       .catch(() => {})
   }, [])
+
+  function handleLoggedIn() {
+    setSignedOut(false)
+    fetchStoredTransactions()
+      .then((stored) => {
+        if (stored) setTransactions(stored)
+      })
+      .catch(() => {})
+  }
 
   function showError(code: StatementError) {
     uploaded.current = true
@@ -73,71 +86,33 @@ function App() {
     }
   }
 
-  async function handleSignUp(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setSignUpError(null)
-    setSignedUp(false)
-    setSigningUp(true)
-    let response: Response
-    let result
-    try {
-      response = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-      if (!response.ok) result = await response.json()
-    } catch {
-      setSignUpError('SignUpFailed')
-      return
-    } finally {
-      setSigningUp(false)
-    }
-
-    if (response.ok) {
-      setSignedUp(true)
-    } else {
-      setSignUpError(Object.hasOwn(signUpErrorMessages, result?.error) ? result.error : 'SignUpFailed')
-    }
+  async function handleLogOut() {
+    await fetch('/api/session', { method: 'DELETE' })
+    uploaded.current = false
+    setTransactions([])
+    setFailedRows([])
+    setSkipped(0)
+    setError(null)
+    setSignedOut(true)
   }
-
-  const emailError = signUpError === 'EmailAlreadyRegistered' || signUpError === 'InvalidEmail' ? signUpError : null
-  const passwordError = signUpError === 'InvalidPassword' ? signUpError : null
-  const generalSignUpError = signUpError === 'SignUpFailed' ? signUpError : null
 
   return (
     <main>
       <h1>LexBank</h1>
-      <form onSubmit={handleSignUp} noValidate>
-        <label>
-          Correo electrónico
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            aria-invalid={emailError !== null}
-            aria-describedby={emailError ? 'email-error' : undefined}
-          />
-        </label>
-        {emailError && <p id="email-error">{signUpErrorMessages[emailError]}</p>}
-        <label>
-          Contraseña
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            aria-invalid={passwordError !== null}
-            aria-describedby={passwordError ? 'password-error' : undefined}
-          />
-        </label>
-        {passwordError && <p id="password-error">{signUpErrorMessages[passwordError]}</p>}
-        {generalSignUpError && <p role="alert">{signUpErrorMessages[generalSignUpError]}</p>}
-        <button type="submit" disabled={signingUp}>
-          Crear cuenta
-        </button>
-      </form>
-      {signedUp && <p role="status">Cuenta creada correctamente</p>}
-      <input type="file" accept=".xlsx" onChange={handleFileChange} />
+      {signedOut && (
+        <>
+          <SignUpForm />
+          <LogInForm onLoggedIn={handleLoggedIn} />
+        </>
+      )}
+      {!signedOut && (
+        <>
+          <button type="button" onClick={handleLogOut}>
+            Cerrar sesión
+          </button>
+          <input type="file" accept=".xlsx" onChange={handleFileChange} />
+        </>
+      )}
       {error && <p role="alert">{statementErrorMessages[error]}</p>}
       {skipped > 0 && <p>Movimientos omitidos por estar ya importados: {skipped}</p>}
       {transactions.length > 0 && (

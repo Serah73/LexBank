@@ -14,4 +14,7 @@ public class EfUserRepository(LexBankDbContext context) : IUserRepository
 
     public async Task<bool> ExistsAsync(string email) =>
         await context.Set<User>().AnyAsync(u => u.Email == email);
+
+    public async Task<User?> FindByEmailAsync(string email) =>
+        await context.Set<User>().FirstOrDefaultAsync(u => u.Email == email);
 }

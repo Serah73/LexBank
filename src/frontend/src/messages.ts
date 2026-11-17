@@ -4,6 +4,13 @@ export type StatementError = 'NotRuralviaStatement' | 'ProcessingFailed'
 
 export type SignUpError = 'EmailAlreadyRegistered' | 'InvalidEmail' | 'InvalidPassword' | 'SignUpFailed'
 
+export type LogInError = 'InvalidCredentials' | 'LogInFailed'
+
+export const logInErrorMessages: Record<LogInError, string> = {
+  InvalidCredentials: 'El correo electrónico o la contraseña no son válidos',
+  LogInFailed: 'No se pudo iniciar sesión',
+}
+
 export const failedRowMessages: Record<FailedRowReason, string> = {
   InvalidDate: 'Fecha no válida',
   InvalidAmount: 'Importe no válido',
