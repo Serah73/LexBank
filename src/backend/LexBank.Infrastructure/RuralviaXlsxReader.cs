@@ -44,7 +44,7 @@ public class RuralviaXlsxReader : IStatementReader
     {
         foreach (var row in Enumerable.Range(1, MaxHeaderRow))
         {
-            var names = sheet.Row(row).CellsUsed().ToDictionary(c => c.GetString(), c => c.Address.ColumnNumber);
+            var names = sheet.Row(row).CellsUsed().GroupBy(c => c.GetString()).ToDictionary(g => g.Key, g => g.First().Address.ColumnNumber);
             if (ExpectedHeaders.All(names.ContainsKey))
             {
                 return (row, new Columns(
