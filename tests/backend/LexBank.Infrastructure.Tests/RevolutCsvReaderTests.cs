@@ -34,10 +34,20 @@ public class RevolutCsvReaderTests
         Assert.Equal(
             new[]
             {
-                new Transaction(new DateOnly(2025, 1, 10), "Supermercado Ejemplo", -23.45m, 1000.00m),
-                new Transaction(new DateOnly(2025, 1, 11), "Nomina Empresa Ejemplo", 1500.00m, 2476.55m),
+                new Transaction(new DateOnly(2025, 1, 10), "Supermercado Ejemplo", -23.45m, 1000.00m, Bank.Revolut),
+                new Transaction(new DateOnly(2025, 1, 11), "Nomina Empresa Ejemplo", 1500.00m, 2476.55m, Bank.Revolut),
             },
             result.Transactions);
+    }
+
+    [Fact]
+    public void Read_RevolutStatement_StampsRevolutAsTheBankOfEveryTransaction()
+    {
+        using var stream = Csv(Row(), Row(start: "2025-01-11 10:00:00"));
+
+        var result = new RevolutCsvReader().Read(stream);
+
+        Assert.All(result.Transactions, t => Assert.Equal(Bank.Revolut, t.Bank));
     }
 
     [Fact]
@@ -126,7 +136,7 @@ public class RevolutCsvReaderTests
         var result = new RevolutCsvReader().Read(stream);
 
         Assert.Equal(
-            new[] { new Transaction(new DateOnly(2025, 1, 10), "Cafe Ejemplo", -11.00m, 1000.00m) },
+            new[] { new Transaction(new DateOnly(2025, 1, 10), "Cafe Ejemplo", -11.00m, 1000.00m, Bank.Revolut) },
             result.Transactions);
     }
 
@@ -168,7 +178,7 @@ public class RevolutCsvReaderTests
         var result = new RevolutCsvReader().Read(stream);
 
         Assert.Equal(
-            new[] { new Transaction(new DateOnly(2025, 1, 10), "Intereses cobrados el 17 de noviembre, 2026", -23.45m, 500.50m) },
+            new[] { new Transaction(new DateOnly(2025, 1, 10), "Intereses cobrados el 17 de noviembre, 2026", -23.45m, 500.50m, Bank.Revolut) },
             result.Transactions);
     }
 
@@ -201,7 +211,7 @@ public class RevolutCsvReaderTests
         var result = new RevolutCsvReader().Read(stream);
 
         Assert.Equal(
-            new[] { new Transaction(new DateOnly(2025, 1, 10), "Cajero Ejemplo", -51.50m, 2425.05m) },
+            new[] { new Transaction(new DateOnly(2025, 1, 10), "Cajero Ejemplo", -51.50m, 2425.05m, Bank.Revolut) },
             result.Transactions);
     }
 
@@ -213,7 +223,7 @@ public class RevolutCsvReaderTests
         var result = new RevolutCsvReader().Read(stream);
 
         Assert.Equal(
-            new[] { new Transaction(new DateOnly(2025, 1, 10), "Nomina, Empresa Ejemplo", 1500.00m, 2476.55m) },
+            new[] { new Transaction(new DateOnly(2025, 1, 10), "Nomina, Empresa Ejemplo", 1500.00m, 2476.55m, Bank.Revolut) },
             result.Transactions);
     }
 }
