@@ -86,7 +86,7 @@ public class RuralviaXlsxReader : IStatementReader
             return new FailedRow(row.RowNumber(), FailedRowReason.InvalidBalance);
         }
 
-        transaction = new Transaction(DateOnly.FromDateTime(date), row.Cell(columns.Description).GetString(), amount, balance);
+        transaction = new Transaction(DateOnly.FromDateTime(date), row.Cell(columns.Description).GetString(), amount, balance, Bank.Ruralvia);
         return null;
     }
 

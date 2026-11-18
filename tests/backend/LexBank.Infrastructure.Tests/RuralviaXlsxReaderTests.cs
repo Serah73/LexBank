@@ -20,11 +20,21 @@ public class RuralviaXlsxReaderTests
         Assert.Equal(
             new[]
             {
-                new Transaction(new DateOnly(2025, 1, 10), "COMPRA SUPERMERCADO EJEMPLO", -23.45m, 1000.00m),
-                new Transaction(new DateOnly(2025, 1, 11), "NOMINA EMPRESA EJEMPLO", 1500.00m, 2476.55m),
-                new Transaction(new DateOnly(2025, 1, 12), "RECIBO LUZ EJEMPLO", -60.10m, 2416.45m),
+                new Transaction(new DateOnly(2025, 1, 10), "COMPRA SUPERMERCADO EJEMPLO", -23.45m, 1000.00m, Bank.Ruralvia),
+                new Transaction(new DateOnly(2025, 1, 11), "NOMINA EMPRESA EJEMPLO", 1500.00m, 2476.55m, Bank.Ruralvia),
+                new Transaction(new DateOnly(2025, 1, 12), "RECIBO LUZ EJEMPLO", -60.10m, 2416.45m, Bank.Ruralvia),
             },
             result.Transactions);
+    }
+
+    [Fact]
+    public void Read_RuralviaStatement_StampsRuralviaAsTheBankOfEveryTransaction()
+    {
+        using var stream = OpenFixture();
+
+        var result = new RuralviaXlsxReader().Read(stream);
+
+        Assert.All(result.Transactions, t => Assert.Equal(Bank.Ruralvia, t.Bank));
     }
 
     [Theory]
@@ -90,7 +100,7 @@ public class RuralviaXlsxReaderTests
         var result = new RuralviaXlsxReader().Read(stream);
 
         Assert.Equal(
-            [new Transaction(new DateOnly(2025, 2, 3), "COMPRA EJEMPLO", -12.50m, 987.50m)],
+            [new Transaction(new DateOnly(2025, 2, 3), "COMPRA EJEMPLO", -12.50m, 987.50m, Bank.Ruralvia)],
             result.Transactions);
     }
 
@@ -118,7 +128,7 @@ public class RuralviaXlsxReaderTests
         var result = new RuralviaXlsxReader().Read(stream);
 
         Assert.Equal(
-            [new Transaction(new DateOnly(2025, 2, 3), "COMPRA EJEMPLO", -12.50m, 987.50m)],
+            [new Transaction(new DateOnly(2025, 2, 3), "COMPRA EJEMPLO", -12.50m, 987.50m, Bank.Ruralvia)],
             result.Transactions);
     }
 
@@ -168,7 +178,7 @@ public class RuralviaXlsxReaderTests
         var result = new RuralviaXlsxReader().Read(stream);
 
         Assert.Equal(
-            [new Transaction(new DateOnly(2025, 2, 3), "COMPRA EJEMPLO", -12.50m, 987.50m)],
+            [new Transaction(new DateOnly(2025, 2, 3), "COMPRA EJEMPLO", -12.50m, 987.50m, Bank.Ruralvia)],
             result.Transactions);
     }
 

@@ -19,7 +19,7 @@ Run from the repository root.
 - **Application:** one class per use case, named with a verb (`UploadStatement`, method `ExecuteAsync`), plus the interfaces the use cases need (`IStatementReader`, `ITransactionRepository`).
   `UploadStatement` uses the first `IStatementReader` whose `CanRead(fileName)` is true: a new format is a new reader registered in `Program.cs`.
   `UploadStatement` returns `UploadStatementResult` (including `SkippedTransactions`), not the reader's result: the reader knows nothing about duplicates.
-- **Infrastructure:** implementations of those interfaces. Third-party libraries (ClosedXML, EF Core, `Microsoft.Extensions.Identity.Core` for password hashing in `IdentityPasswordHasher`) are used only here.
+- **Infrastructure:** implementations of those interfaces. Readers locate columns by header name, never by position; a new reader must do the same and reject files where a header is missing. Third-party libraries (ClosedXML, EF Core, `Microsoft.Extensions.Identity.Core` for password hashing in `IdentityPasswordHasher`) are used only here.
 - **Api:** minimal API endpoints and dependency injection, all in `Program.cs`. Endpoints call a use case or a repository; they hold no business logic. The exceptions a use case throws (`InvalidEmailException`, `EmailAlreadyRegisteredException`...) are mapped to status codes and error codes in `Program.cs`.
   Authentication is a session cookie (ADR-0007): it carries the user's email, and the protected endpoints read it from the `ClaimsPrincipal`. `/api/users` and `/api/session` stay open.
 
@@ -31,7 +31,7 @@ Run from the repository root.
 - **Passwords:** never store or log one in clear. `User` overrides `PrintMembers` so its `ToString()` hides the hash; keep it when changing the record.
 - **Users table:** `Users.Email` has a unique index; a model change that breaks the development database is fixed by dropping and recreating it.
 - **Listing order:** transactions are listed by `Date DESC, Id ASC`.
-- **Migrations:** the API applies pending migrations on startup. Every model change needs a migration; never edit an applied one.
+- **Migrations:** the API applies pending migrations on startup. While the database is for development only, keep a single `InitialCreate`: delete `Migrations/*`, run `dotnet ef migrations add InitialCreate` and drop the database. Once real data must be kept, switch to one migration per model change and never edit an applied one.
 - **`Microsoft.EntityFrameworkCore.Design` in `LexBank.Api`:** required by `dotnet-ef` in the startup project (`PrivateAssets=all`). It is not a dependency-rule violation; do not remove it.
 
 ## Tests

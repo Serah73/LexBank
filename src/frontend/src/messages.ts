@@ -1,5 +1,7 @@
 export type FailedRowReason = 'InvalidDate' | 'InvalidAmount' | 'InvalidBalance'
 
+export type Bank = 'Ruralvia' | 'Revolut'
+
 export type StatementError = 'UnsupportedStatement' | 'ProcessingFailed'
 
 export type SignUpError = 'EmailAlreadyRegistered' | 'InvalidEmail' | 'InvalidPassword' | 'SignUpFailed'
@@ -9,6 +11,11 @@ export type LogInError = 'InvalidCredentials' | 'LogInFailed'
 export const logInErrorMessages: Record<LogInError, string> = {
   InvalidCredentials: 'El correo electrónico o la contraseña no son válidos',
   LogInFailed: 'No se pudo iniciar sesión',
+}
+
+export const bankNames: Record<Bank, string> = {
+  Ruralvia: 'Ruralvía',
+  Revolut: 'Revolut',
 }
 
 export const failedRowMessages: Record<FailedRowReason, string> = {

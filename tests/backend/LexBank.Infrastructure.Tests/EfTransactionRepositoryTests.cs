@@ -41,13 +41,13 @@ public class EfTransactionRepositoryTests : IDisposable
     {
         var repository = new EfTransactionRepository(_context);
 
-        await repository.AddAsync(Email, [new Transaction(new DateOnly(2025, 1, 5), "ENERO", 10.00m, 100.00m)]);
+        await repository.AddAsync(Email, [new Transaction(new DateOnly(2025, 1, 5), "ENERO", 10.00m, 100.00m, Bank.Ruralvia)]);
         await repository.AddAsync(Email,
         [
-            new Transaction(new DateOnly(2025, 3, 5), "MARZO PRIMERO", 20.00m, 120.00m),
-            new Transaction(new DateOnly(2025, 3, 5), "MARZO SEGUNDO", 5.00m, 125.00m),
+            new Transaction(new DateOnly(2025, 3, 5), "MARZO PRIMERO", 20.00m, 120.00m, Bank.Ruralvia),
+            new Transaction(new DateOnly(2025, 3, 5), "MARZO SEGUNDO", 5.00m, 125.00m, Bank.Ruralvia),
         ]);
-        await repository.AddAsync(Email, [new Transaction(new DateOnly(2025, 2, 5), "FEBRERO", 30.00m, 90.00m)]);
+        await repository.AddAsync(Email, [new Transaction(new DateOnly(2025, 2, 5), "FEBRERO", 30.00m, 90.00m, Bank.Ruralvia)]);
         var stored = await repository.ListAsync(Email);
 
         Assert.Equal(["MARZO PRIMERO", "MARZO SEGUNDO", "FEBRERO", "ENERO"], stored.Select(t => t.Description));
@@ -60,17 +60,32 @@ public class EfTransactionRepositoryTests : IDisposable
 
         await repository.AddAsync(Email,
         [
-            new Transaction(new DateOnly(2025, 1, 10), "COMPRA SUPERMERCADO EJEMPLO", -23.45m, 1000.00m),
-            new Transaction(new DateOnly(2025, 1, 11), "NOMINA EMPRESA EJEMPLO", 1500.00m, 2476.55m),
+            new Transaction(new DateOnly(2025, 1, 10), "COMPRA SUPERMERCADO EJEMPLO", -23.45m, 1000.00m, Bank.Ruralvia),
+            new Transaction(new DateOnly(2025, 1, 11), "NOMINA EMPRESA EJEMPLO", 1500.00m, 2476.55m, Bank.Ruralvia),
         ]);
         var stored = await repository.ListAsync(Email);
 
         Assert.Equal(
             new[]
             {
-                new Transaction(new DateOnly(2025, 1, 11), "NOMINA EMPRESA EJEMPLO", 1500.00m, 2476.55m),
-                new Transaction(new DateOnly(2025, 1, 10), "COMPRA SUPERMERCADO EJEMPLO", -23.45m, 1000.00m),
+                new Transaction(new DateOnly(2025, 1, 11), "NOMINA EMPRESA EJEMPLO", 1500.00m, 2476.55m, Bank.Ruralvia),
+                new Transaction(new DateOnly(2025, 1, 10), "COMPRA SUPERMERCADO EJEMPLO", -23.45m, 1000.00m, Bank.Ruralvia),
             },
             stored);
+    }
+
+    [Fact]
+    public async Task ListAsync_StoredTransactionsFromDifferentBanks_KeepTheirBank()
+    {
+        var repository = new EfTransactionRepository(_context);
+
+        await repository.AddAsync(Email,
+        [
+            new Transaction(new DateOnly(2025, 1, 10), "DESDE RURALVIA", -10.00m, 100.00m, Bank.Ruralvia),
+            new Transaction(new DateOnly(2025, 1, 9), "DESDE REVOLUT", -5.00m, 110.00m, Bank.Revolut),
+        ]);
+        var stored = await repository.ListAsync(Email);
+
+        Assert.Equal([Bank.Ruralvia, Bank.Revolut], stored.Select(t => t.Bank));
     }
 }

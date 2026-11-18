@@ -73,7 +73,7 @@ public class RevolutCsvReader : IStatementReader
             return new FailedRow(lineNumber, FailedRowReason.InvalidBalance);
         }
 
-        transaction = new Transaction(DateOnly.FromDateTime(date), fields[columns.Description], amount - fee, balance);
+        transaction = new Transaction(DateOnly.FromDateTime(date), fields[columns.Description], amount - fee, balance, Bank.Revolut);
         return null;
     }
 

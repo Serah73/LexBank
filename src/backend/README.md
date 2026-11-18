@@ -10,7 +10,7 @@ The backend follows Clean Architecture ([ADR-0002](../../docs/adr/0002-clean-arc
 
 | Project | Responsibility | References |
 |---|---|---|
-| `LexBank.Domain` | Business concepts: `Transaction`, `FailedRow`, `FailedRowReason`, `User`. | Nothing |
+| `LexBank.Domain` | Business concepts: `Transaction`, `Bank`, `FailedRow`, `FailedRowReason`, `User`. | Nothing |
 | `LexBank.Application` | Use cases (`UploadStatement`, `SignUp`, `LogIn`) and the interfaces they need (`IStatementReader`, `ITransactionRepository`, `IUserRepository`, `IPasswordHasher`). | Domain |
 | `LexBank.Infrastructure` | Implementations: `RuralviaXlsxReader` (ClosedXML), `RevolutCsvReader`, `EfTransactionRepository`, `EfUserRepository` and `LexBankDbContext` (EF Core), `IdentityPasswordHasher` (password hashing with `Microsoft.Extensions.Identity.Core`), migrations. | Application |
 | `LexBank.Api` | Minimal API endpoints and dependency injection. | Application, Infrastructure |
@@ -28,7 +28,7 @@ The backend follows Clean Architecture ([ADR-0002](../../docs/adr/0002-clean-arc
 The API returns stable codes instead of user-facing text; the frontend translates them. Enumerations are serialized as strings.
 
 - A row that cannot be read is reported with its row number and a reason: `InvalidDate`, `InvalidAmount` or `InvalidBalance`.
-- A file that is not a supported statement is rejected with `400 Bad Request` and the error code `UnsupportedStatement`. The reader is chosen by the file extension: `.xlsx` is read as a Ruralvía statement and `.csv` as a Revolut statement. The Revolut reader keeps only the completed transactions of the current account (`Actual`) and stores each amount minus its fee; a row with fewer fields than the header makes the whole file unsupported.
+- A file that is not a supported statement is rejected with `400 Bad Request` and the error code `UnsupportedStatement`. The reader is chosen by the file extension: `.xlsx` is read as a Ruralvía statement and `.csv` as a Revolut statement. The Revolut reader keeps only the completed transactions of the current account (`Actual`) and stores each amount minus its fee; a row with fewer fields than the header makes the whole file unsupported. The Ruralvía reader looks for the header row in the first 10 rows of the sheet, finds each column by its header name (their order does not matter) and ignores everything above the header; if the header is not found or a column is missing, the file is unsupported.
 - A sign-up is rejected with `400 Bad Request` and the error code `InvalidEmail` or `InvalidPassword`, or with `409 Conflict` and `EmailAlreadyRegistered`. If both fields are invalid, only `InvalidEmail` is returned.
 - A log-in with an unknown email or a wrong password is rejected with `401 Unauthorized` and the error code `InvalidCredentials`; the response is the same in both cases, so it does not reveal which emails are registered.
 - A request to a protected endpoint without a valid session is answered with `401 Unauthorized` and no body. A session whose user no longer exists is rejected the same way.
@@ -37,7 +37,7 @@ Authentication uses a session cookie (`HttpOnly`, `SameSite=Strict`) that carrie
 
 An email is valid when it has at least one character before and after the first `@` and at most 256 characters. A password must have between 8 and 128 characters; there are no composition rules. Emails are compared without distinguishing case (the collation of SQL Server) and are stored as written. Passwords are stored only as a hash.
 
-A transaction is considered already imported when a transaction stored for the same user has the same date, description, amount and balance. Identical rows inside the same file are kept: only as many copies as are already stored are skipped.
+Each transaction carries the bank it was read from as a stable code (`bank`: `Ruralvia` or `Revolut`), stored as text. A transaction is considered already imported when a transaction stored for the same user has the same date, description, amount, balance and bank. Identical rows inside the same file are kept: only as many copies as are already stored are skipped.
 
 In the development environment, the interactive documentation (Swagger UI) is available at `http://localhost:5236/swagger`.
 
@@ -92,7 +92,13 @@ sqlcmd -S "(localdb)\\MSSQLLocalDB" -E -Q "DROP DATABASE LexBank"
 
 ## Migrations
 
-The EF Core CLI is a local tool (`.config/dotnet-tools.json`). Restore it once with `dotnet tool restore`. To add a migration after changing the model:
+The EF Core CLI is a local tool (`.config/dotnet-tools.json`). Restore it once with `dotnet tool restore`. The development database holds no data worth keeping (the statements are re-imported from the source files), so while it stays that way the model changes are folded into a single `InitialCreate` migration instead of adding one per change: delete the contents of `Migrations`, regenerate it and drop the database.
+
+```bash
+dotnet ef migrations add InitialCreate --project src/backend/LexBank.Infrastructure --startup-project src/backend/LexBank.Api
+```
+
+Once data has to be preserved, each change is a new migration:
 
 ```bash
 dotnet ef migrations add <Name> --project src/backend/LexBank.Infrastructure --startup-project src/backend/LexBank.Api

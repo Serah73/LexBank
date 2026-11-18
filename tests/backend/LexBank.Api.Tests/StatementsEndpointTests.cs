@@ -77,6 +77,32 @@ public class StatementsEndpointTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Upload_RuralviaStatement_ReturnsTransactionsWithTheRuralviaBankCode()
+    {
+        using var content = FixtureUpload();
+
+        var response = await _client.PostAsync("/api/statements", content);
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var banks = body.RootElement.GetProperty("transactions").EnumerateArray().Select(t => t.GetProperty("bank").GetString());
+        Assert.All(banks, bank => Assert.Equal("Ruralvia", bank));
+    }
+
+    [Fact]
+    public async Task ListTransactions_AfterImportingARevolutStatement_ReturnsTheRevolutBankCode()
+    {
+        using var content = RevolutFixtureUpload();
+        await _client.PostAsync("/api/statements", content);
+
+        var response = await _client.GetAsync("/api/transactions");
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var banks = body.RootElement.EnumerateArray().Select(t => t.GetProperty("bank").GetString());
+        Assert.NotEmpty(banks);
+        Assert.All(banks, bank => Assert.Equal("Revolut", bank));
+    }
+
+    [Fact]
     public async Task Upload_RevolutCsv_ReturnsTheCompletedCurrentAccountTransactions()
     {
         using var content = RevolutFixtureUpload();
@@ -159,9 +185,9 @@ public class StatementsEndpointTests : IAsyncLifetime
     {
         var reader = new StubStatementReader();
         using var client = await ClientReadingWithAsync(reader);
-        var january = new Transaction(new DateOnly(2025, 1, 10), "COMPRA ENERO", -10m, 100m);
-        var february = new Transaction(new DateOnly(2025, 2, 10), "COMPRA FEBRERO", -20m, 80m);
-        var march = new Transaction(new DateOnly(2025, 3, 10), "COMPRA MARZO", -30m, 50m);
+        var january = new Transaction(new DateOnly(2025, 1, 10), "COMPRA ENERO", -10m, 100m, Bank.Ruralvia);
+        var february = new Transaction(new DateOnly(2025, 2, 10), "COMPRA FEBRERO", -20m, 80m, Bank.Ruralvia);
+        var march = new Transaction(new DateOnly(2025, 3, 10), "COMPRA MARZO", -30m, 50m, Bank.Ruralvia);
 
         reader.Transactions = [january, february];
         await client.PostAsync("/api/statements", AnyFileUpload());
@@ -181,8 +207,8 @@ public class StatementsEndpointTests : IAsyncLifetime
         using var client = await ClientReadingWithAsync(reader);
         reader.Transactions =
         [
-            new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m),
-            new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m),
+            new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m, Bank.Ruralvia),
+            new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m, Bank.Ruralvia),
         ];
 
         await client.PostAsync("/api/statements", AnyFileUpload());
@@ -197,12 +223,12 @@ public class StatementsEndpointTests : IAsyncLifetime
     {
         var reader = new StubStatementReader();
         using var client = await ClientReadingWithAsync(reader);
-        reader.Transactions = [new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m)];
+        reader.Transactions = [new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m, Bank.Ruralvia)];
         await client.PostAsync("/api/statements", AnyFileUpload());
         reader.Transactions =
         [
-            new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m),
-            new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m),
+            new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m, Bank.Ruralvia),
+            new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m, Bank.Ruralvia),
         ];
 
         await client.PostAsync("/api/statements", AnyFileUpload());
@@ -217,9 +243,9 @@ public class StatementsEndpointTests : IAsyncLifetime
     {
         var reader = new StubStatementReader();
         using var client = await ClientReadingWithAsync(reader);
-        reader.Transactions = [new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m)];
+        reader.Transactions = [new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 100m, Bank.Ruralvia)];
         await client.PostAsync("/api/statements", AnyFileUpload());
-        reader.Transactions = [new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 90m)];
+        reader.Transactions = [new Transaction(new DateOnly(2025, 1, 10), "CAFE", -1.50m, 90m, Bank.Ruralvia)];
 
         await client.PostAsync("/api/statements", AnyFileUpload());
         var response = await client.GetAsync("/api/transactions");
@@ -248,9 +274,9 @@ public class StatementsEndpointTests : IAsyncLifetime
     {
         var reader = new StubStatementReader();
         using var client = await ClientReadingWithAsync(reader);
-        var january = new Transaction(new DateOnly(2025, 1, 10), "COMPRA ENERO", -10m, 100m);
-        var february = new Transaction(new DateOnly(2025, 2, 10), "COMPRA FEBRERO", -20m, 80m);
-        var march = new Transaction(new DateOnly(2025, 3, 10), "COMPRA MARZO", -30m, 50m);
+        var january = new Transaction(new DateOnly(2025, 1, 10), "COMPRA ENERO", -10m, 100m, Bank.Ruralvia);
+        var february = new Transaction(new DateOnly(2025, 2, 10), "COMPRA FEBRERO", -20m, 80m, Bank.Ruralvia);
+        var march = new Transaction(new DateOnly(2025, 3, 10), "COMPRA MARZO", -30m, 50m, Bank.Ruralvia);
         reader.Transactions = [january, february];
         await client.PostAsync("/api/statements", AnyFileUpload());
         reader.Transactions = [february, march];

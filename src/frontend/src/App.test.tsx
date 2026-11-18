@@ -373,14 +373,36 @@ it('shows the transactions table with date, description, amount and balance', as
 
   await screen.findByRole('table')
   const headers = screen.getAllByRole('columnheader').map((h) => h.textContent)
-  expect(headers).toEqual(['Fecha', 'Descripción', 'Importe', 'Saldo'])
+  expect(headers).toEqual(['Fecha', 'Descripción', 'Importe', 'Saldo', 'Banco'])
+})
+
+it('shows the bank name of each transaction in the table', async () => {
+  stubApi(() =>
+    Promise.resolve(
+      Response.json({
+        transactions: [
+          { date: '2025-01-10', description: 'COMPRA', amount: -23.45, balance: 1000, bank: 'Ruralvia' },
+          { date: '2025-01-09', description: 'CAFE', amount: -2, balance: 998, bank: 'Revolut' },
+        ],
+        failedRows: [],
+      }),
+    ),
+  )
+  const { container } = render(<App />)
+
+  uploadFile(container)
+
+  await screen.findByRole('table')
+  expect(screen.getByRole('columnheader', { name: 'Banco' })).toBeTruthy()
+  expect(screen.getByRole('cell', { name: 'Ruralvía' })).toBeTruthy()
+  expect(screen.getByRole('cell', { name: 'Revolut' })).toBeTruthy()
 })
 
 it('shows the stored transactions when the page loads', async () => {
   vi.stubGlobal(
     'fetch',
     vi.fn().mockResolvedValue(
-      Response.json([{ date: '2025-01-10', description: 'COMPRA', amount: -23.45, balance: 1000 }]),
+      Response.json([{ date: '2025-01-10', description: 'COMPRA', amount: -23.45, balance: 1000, bank: 'Ruralvia' }]),
     ),
   )
 
@@ -388,7 +410,7 @@ it('shows the stored transactions when the page loads', async () => {
 
   await screen.findByRole('table')
   const cells = screen.getAllByRole('cell').map((c) => c.textContent)
-  expect(cells).toEqual(['2025-01-10', 'COMPRA', '-23.45', '1000'])
+  expect(cells).toEqual(['2025-01-10', 'COMPRA', '-23.45', '1000', 'Ruralvía'])
 })
 
 it('does not replace an uploaded statement with a late response to the initial load', async () => {
@@ -399,7 +421,9 @@ it('does not replace an uploaded statement with a late response to the initial l
       init?.method === 'POST'
         ? Promise.resolve(
             Response.json({
-              transactions: [{ date: '2025-01-10', description: 'COMPRA', amount: -23.45, balance: 1000 }],
+              transactions: [
+                { date: '2025-01-10', description: 'COMPRA', amount: -23.45, balance: 1000, bank: 'Ruralvia' },
+              ],
               failedRows: [],
             }),
           )
@@ -415,7 +439,13 @@ it('does not replace an uploaded statement with a late response to the initial l
   resolveStored(Response.json([]))
   await new Promise((resolve) => setTimeout(resolve, 0))
 
-  expect(screen.getAllByRole('cell').map((c) => c.textContent)).toEqual(['2025-01-10', 'COMPRA', '-23.45', '1000'])
+  expect(screen.getAllByRole('cell').map((c) => c.textContent)).toEqual([
+    '2025-01-10',
+    'COMPRA',
+    '-23.45',
+    '1000',
+    'Ruralvía',
+  ])
 })
 
 it('tells the user the format is not supported when the file is not a known statement', async () => {
