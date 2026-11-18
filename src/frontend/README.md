@@ -9,7 +9,7 @@ For the purpose and scope of the project, see the [main README](../../README.md)
 The frontend is deliberately minimal at this stage: the thesis prioritizes the backend and the categorization logic, and the visual design is scheduled for the final stories.
 
 - One screen with two views. Without a session, it shows the sign-up form and the log-in form (email and password). The sign-up form creates an account and confirms it, with each error from the API shown under its field; it does not start a session. The log-in form starts the session and shows a general message when the credentials are not valid.
-- With a session, it shows a button to log out and the import part: a file input to import an XLSX or CSV statement, the transactions table (date, description, amount, balance) and the list of rows that could not be read.
+- With a session, it shows a button to log out and the import part: a file input to import an XLSX or CSV statement, the transactions table (date, description, amount, balance, bank) and the list of rows that could not be read.
 - The screen assumes there is a session until the first request for the stored transactions is answered with `401`.
 - When an import skips transactions that were already stored, the screen shows how many were skipped.
 - The stored transactions are loaded when the page opens.

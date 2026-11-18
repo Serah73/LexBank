@@ -134,6 +134,7 @@ The project is under active development.
 | User sign-up with email and password | Implemented |
 | User log-in with email and password; each user sees only their own data | Implemented |
 | Detection of the header row and the columns by header name | Implemented |
+| Bank of origin kept on each transaction and shown in the list | Implemented |
 | Manual mapping of headers and bank selection | Planned |
 | PDF import | Planned |
 | Deterministic categorization engine, corrections and rule management | Planned |

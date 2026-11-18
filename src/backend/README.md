@@ -10,7 +10,7 @@ The backend follows Clean Architecture ([ADR-0002](../../docs/adr/0002-clean-arc
 
 | Project | Responsibility | References |
 |---|---|---|
-| `LexBank.Domain` | Business concepts: `Transaction`, `FailedRow`, `FailedRowReason`, `User`. | Nothing |
+| `LexBank.Domain` | Business concepts: `Transaction`, `Bank`, `FailedRow`, `FailedRowReason`, `User`. | Nothing |
 | `LexBank.Application` | Use cases (`UploadStatement`, `SignUp`, `LogIn`) and the interfaces they need (`IStatementReader`, `ITransactionRepository`, `IUserRepository`, `IPasswordHasher`). | Domain |
 | `LexBank.Infrastructure` | Implementations: `RuralviaXlsxReader` (ClosedXML), `RevolutCsvReader`, `EfTransactionRepository`, `EfUserRepository` and `LexBankDbContext` (EF Core), `IdentityPasswordHasher` (password hashing with `Microsoft.Extensions.Identity.Core`), migrations. | Application |
 | `LexBank.Api` | Minimal API endpoints and dependency injection. | Application, Infrastructure |
@@ -37,7 +37,7 @@ Authentication uses a session cookie (`HttpOnly`, `SameSite=Strict`) that carrie
 
 An email is valid when it has at least one character before and after the first `@` and at most 256 characters. A password must have between 8 and 128 characters; there are no composition rules. Emails are compared without distinguishing case (the collation of SQL Server) and are stored as written. Passwords are stored only as a hash.
 
-A transaction is considered already imported when a transaction stored for the same user has the same date, description, amount and balance. Identical rows inside the same file are kept: only as many copies as are already stored are skipped.
+Each transaction carries the bank it was read from as a stable code (`bank`: `Ruralvia` or `Revolut`), stored as text. A transaction is considered already imported when a transaction stored for the same user has the same date, description, amount, balance and bank. Identical rows inside the same file are kept: only as many copies as are already stored are skipped.
 
 In the development environment, the interactive documentation (Swagger UI) is available at `http://localhost:5236/swagger`.
 
@@ -92,7 +92,13 @@ sqlcmd -S "(localdb)\\MSSQLLocalDB" -E -Q "DROP DATABASE LexBank"
 
 ## Migrations
 
-The EF Core CLI is a local tool (`.config/dotnet-tools.json`). Restore it once with `dotnet tool restore`. To add a migration after changing the model:
+The EF Core CLI is a local tool (`.config/dotnet-tools.json`). Restore it once with `dotnet tool restore`. The development database holds no data worth keeping (the statements are re-imported from the source files), so while it stays that way the model changes are folded into a single `InitialCreate` migration instead of adding one per change: delete the contents of `Migrations`, regenerate it and drop the database.
+
+```bash
+dotnet ef migrations add InitialCreate --project src/backend/LexBank.Infrastructure --startup-project src/backend/LexBank.Api
+```
+
+Once data has to be preserved, each change is a new migration:
 
 ```bash
 dotnet ef migrations add <Name> --project src/backend/LexBank.Infrastructure --startup-project src/backend/LexBank.Api

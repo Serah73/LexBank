@@ -31,7 +31,7 @@ Run from the repository root.
 - **Passwords:** never store or log one in clear. `User` overrides `PrintMembers` so its `ToString()` hides the hash; keep it when changing the record.
 - **Users table:** `Users.Email` has a unique index; a model change that breaks the development database is fixed by dropping and recreating it.
 - **Listing order:** transactions are listed by `Date DESC, Id ASC`.
-- **Migrations:** the API applies pending migrations on startup. Every model change needs a migration; never edit an applied one.
+- **Migrations:** the API applies pending migrations on startup. While the database is for development only, keep a single `InitialCreate`: delete `Migrations/*`, run `dotnet ef migrations add InitialCreate` and drop the database. Once real data must be kept, switch to one migration per model change and never edit an applied one.
 - **`Microsoft.EntityFrameworkCore.Design` in `LexBank.Api`:** required by `dotnet-ef` in the startup project (`PrivateAssets=all`). It is not a dependency-rule violation; do not remove it.
 
 ## Tests
