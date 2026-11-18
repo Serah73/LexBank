@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import LogInForm from './LogInForm'
-import { failedRowMessages, statementErrorMessages } from './messages'
-import type { FailedRowReason, StatementError } from './messages'
+import { bankNames, failedRowMessages, statementErrorMessages } from './messages'
+import type { Bank, FailedRowReason, StatementError } from './messages'
 import SignUpForm from './SignUpForm'
 
 interface Transaction {
@@ -10,6 +10,7 @@ interface Transaction {
   description: string
   amount: number
   balance: number
+  bank: Bank
 }
 
 interface FailedRow {
@@ -123,6 +124,7 @@ function App() {
               <th>Descripción</th>
               <th>Importe</th>
               <th>Saldo</th>
+              <th>Banco</th>
             </tr>
           </thead>
           <tbody>
@@ -132,6 +134,7 @@ function App() {
                 <td>{t.description}</td>
                 <td>{t.amount}</td>
                 <td>{t.balance}</td>
+                <td>{bankNames[t.bank]}</td>
               </tr>
             ))}
           </tbody>
