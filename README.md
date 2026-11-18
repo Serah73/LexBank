@@ -127,14 +127,14 @@ The project is under active development.
 
 | Capability | Status |
 |---|---|
-| Import of XLSX statements (Ruralvía) into the common schema | Implemented |
+| Import of XLSX (Ruralvía) and CSV (Revolut) statements into the common schema | Implemented |
 | Report of the rows that could not be read, with their reason | Implemented |
 | Persistence of imported transactions | Implemented |
 | Skipping of transactions that were already imported | Implemented |
 | User sign-up with email and password | Implemented |
 | User log-in with email and password; each user sees only their own data | Implemented |
 | Automatic detection of bank and headers; manual mapping | Planned |
-| CSV and PDF import | Planned |
+| PDF import | Planned |
 | Deterministic categorization engine, corrections and rule management | Planned |
 | Accuracy measurement and spending charts | Planned |
 | Spanish and English user interface | Planned (Spanish only for now) |

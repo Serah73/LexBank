@@ -12,7 +12,7 @@ The backend follows Clean Architecture ([ADR-0002](../../docs/adr/0002-clean-arc
 |---|---|---|
 | `LexBank.Domain` | Business concepts: `Transaction`, `FailedRow`, `FailedRowReason`, `User`. | Nothing |
 | `LexBank.Application` | Use cases (`UploadStatement`, `SignUp`, `LogIn`) and the interfaces they need (`IStatementReader`, `ITransactionRepository`, `IUserRepository`, `IPasswordHasher`). | Domain |
-| `LexBank.Infrastructure` | Implementations: `RuralviaXlsxReader` (ClosedXML), `EfTransactionRepository`, `EfUserRepository` and `LexBankDbContext` (EF Core), `IdentityPasswordHasher` (password hashing with `Microsoft.Extensions.Identity.Core`), migrations. | Application |
+| `LexBank.Infrastructure` | Implementations: `RuralviaXlsxReader` (ClosedXML), `RevolutCsvReader`, `EfTransactionRepository`, `EfUserRepository` and `LexBankDbContext` (EF Core), `IdentityPasswordHasher` (password hashing with `Microsoft.Extensions.Identity.Core`), migrations. | Application |
 | `LexBank.Api` | Minimal API endpoints and dependency injection. | Application, Infrastructure |
 
 ## API
@@ -28,7 +28,7 @@ The backend follows Clean Architecture ([ADR-0002](../../docs/adr/0002-clean-arc
 The API returns stable codes instead of user-facing text; the frontend translates them. Enumerations are serialized as strings.
 
 - A row that cannot be read is reported with its row number and a reason: `InvalidDate`, `InvalidAmount` or `InvalidBalance`.
-- A file that is not a supported statement is rejected with `400 Bad Request` and the error code `NotRuralviaStatement`.
+- A file that is not a supported statement is rejected with `400 Bad Request` and the error code `UnsupportedStatement`. The reader is chosen by the file extension: `.xlsx` is read as a Ruralvía statement and `.csv` as a Revolut statement. The Revolut reader keeps only the completed transactions of the current account (`Actual`) and stores each amount minus its fee; a row with fewer fields than the header makes the whole file unsupported.
 - A sign-up is rejected with `400 Bad Request` and the error code `InvalidEmail` or `InvalidPassword`, or with `409 Conflict` and `EmailAlreadyRegistered`. If both fields are invalid, only `InvalidEmail` is returned.
 - A log-in with an unknown email or a wrong password is rejected with `401 Unauthorized` and the error code `InvalidCredentials`; the response is the same in both cases, so it does not reveal which emails are registered.
 - A request to a protected endpoint without a valid session is answered with `401 Unauthorized` and no body. A session whose user no longer exists is rejected the same way.
@@ -108,7 +108,7 @@ The tests are written with xUnit and live under `tests/backend`, one project per
 
 | Project | What it tests |
 |---|---|
-| `LexBank.Infrastructure.Tests` | The Ruralvía XLSX reader, against a fixture file, and the EF Core repositories, against a real database. |
+| `LexBank.Infrastructure.Tests` | The Ruralvía XLSX and Revolut CSV readers, against fixture files, and the EF Core repositories, against a real database. |
 | `LexBank.Api.Tests` | The HTTP endpoints end to end, with the API hosted in memory and a real database. |
 | `LexBank.Domain.Tests` | Domain logic. |
 
