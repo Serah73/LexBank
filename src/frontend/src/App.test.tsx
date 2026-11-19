@@ -373,7 +373,7 @@ it('shows the transactions table with date, description, amount and balance', as
 
   await screen.findByRole('table')
   const headers = screen.getAllByRole('columnheader').map((h) => h.textContent)
-  expect(headers).toEqual(['Fecha', 'Descripción', 'Importe', 'Saldo', 'Banco', 'Categoría'])
+  expect(headers).toEqual(['Fecha', 'Descripción', 'Importe', 'Saldo', 'Banco', 'Categoría', 'Regla'])
 })
 
 it('shows the bank name of each transaction in the table', async () => {
@@ -420,12 +420,47 @@ it('shows the Spanish name of the category of each transaction in the table', as
   expect(screen.getByRole('cell', { name: 'Ahorro' })).toBeTruthy()
 })
 
+it.each([
+  ['a whole word', 'bar', 'Expense', 'Gasto con la palabra «bar»'],
+  ['the start of a word', 'hotel*', 'Expense', 'Gasto con una palabra que empieza por «hotel»'],
+  ['the end of a word', '*canarias', 'Expense', 'Gasto con una palabra que termina en «canarias»'],
+  ['a text inside the description', '*mercadona*', 'Expense', 'Gasto cuya descripción contiene «mercadona»'],
+  ['an income', 'bizum', 'Income', 'Ingreso con la palabra «bizum»'],
+  ['any amount', 'traspaso', 'Any', 'Movimiento con la palabra «traspaso»'],
+])('shows a Spanish description of the rule of each transaction (%s)', async (_case, pattern, sign, description) => {
+  stubApi(() =>
+    Promise.resolve(
+      Response.json({
+        transactions: [
+          {
+            date: '2025-01-10',
+            description: 'COMPRA',
+            amount: -23.45,
+            balance: 1000,
+            bank: 'Ruralvia',
+            category: 'Groceries',
+            rule: { pattern, category: 'Groceries', sign, priority: 6 },
+          },
+        ],
+        failedRows: [],
+      }),
+    ),
+  )
+  const { container } = render(<App />)
+
+  uploadFile(container)
+
+  await screen.findByRole('table')
+  expect(screen.getByRole('columnheader', { name: 'Regla' })).toBeTruthy()
+  expect(screen.getByRole('cell', { name: description })).toBeTruthy()
+})
+
 it('shows "Sin categoría" for a transaction without category', async () => {
   stubApi(() =>
     Promise.resolve(
       Response.json({
         transactions: [
-          { date: '2025-01-10', description: 'TJ-FAUCA', amount: -4.8, balance: 100, bank: 'Ruralvia', category: null },
+          { date: '2025-01-10', description: 'TJ-FAUCA', amount: -4.8, balance: 100, bank: 'Ruralvia', category: 'Uncategorized', rule: null },
         ],
         failedRows: [],
       }),
@@ -439,11 +474,33 @@ it('shows "Sin categoría" for a transaction without category', async () => {
   expect(screen.getByRole('cell', { name: 'Sin categoría' })).toBeTruthy()
 })
 
+it('leaves the rule cell empty for a transaction without rule', async () => {
+  stubApi(() =>
+    Promise.resolve(
+      Response.json({
+        transactions: [
+          { date: '2025-01-10', description: 'TJ-FAUCA', amount: -4.8, balance: 100, bank: 'Ruralvia', category: 'Uncategorized', rule: null },
+        ],
+        failedRows: [],
+      }),
+    ),
+  )
+  const { container } = render(<App />)
+
+  uploadFile(container)
+
+  await screen.findByRole('table')
+  const cells = screen.getAllByRole('cell').map((c) => c.textContent)
+  expect(cells.slice(-2)).toEqual(['Sin categoría', ''])
+})
+
 it('shows the stored transactions when the page loads', async () => {
   vi.stubGlobal(
     'fetch',
     vi.fn().mockResolvedValue(
-      Response.json([{ date: '2025-01-10', description: 'COMPRA', amount: -23.45, balance: 1000, bank: 'Ruralvia' }]),
+      Response.json([
+        { date: '2025-01-10', description: 'COMPRA', amount: -23.45, balance: 1000, bank: 'Ruralvia', category: 'Uncategorized', rule: null },
+      ]),
     ),
   )
 
@@ -451,7 +508,7 @@ it('shows the stored transactions when the page loads', async () => {
 
   await screen.findByRole('table')
   const cells = screen.getAllByRole('cell').map((c) => c.textContent)
-  expect(cells).toEqual(['2025-01-10', 'COMPRA', '-23.45', '1000', 'Ruralvía', 'Sin categoría'])
+  expect(cells).toEqual(['2025-01-10', 'COMPRA', '-23.45', '1000', 'Ruralvía', 'Sin categoría', ''])
 })
 
 it('does not replace an uploaded statement with a late response to the initial load', async () => {
@@ -463,7 +520,7 @@ it('does not replace an uploaded statement with a late response to the initial l
         ? Promise.resolve(
             Response.json({
               transactions: [
-                { date: '2025-01-10', description: 'COMPRA', amount: -23.45, balance: 1000, bank: 'Ruralvia' },
+                { date: '2025-01-10', description: 'COMPRA', amount: -23.45, balance: 1000, bank: 'Ruralvia', category: 'Uncategorized', rule: null },
               ],
               failedRows: [],
             }),
@@ -487,6 +544,7 @@ it('does not replace an uploaded statement with a late response to the initial l
     '1000',
     'Ruralvía',
     'Sin categoría',
+    '',
   ])
 })
 
