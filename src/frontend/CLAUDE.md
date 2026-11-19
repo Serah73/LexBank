@@ -26,6 +26,7 @@ Run from `src/frontend`.
 - **Session:** the screen assumes a session until `GET /api/transactions` answers `401`; only an explicit `401` shows the forms. A test that needs the signed-out view stubs that request with `401`; the two forms share labels, so query them inside `within(screen.getByRole('form', { name: ... }))`.
 - **API responses are untrusted:** check the shape of a response before using it (see `handleFileChange` in `App.tsx`).
 - **Language:** user-facing text is in Spanish (the default UI language) and hard-coded for now; English arrives with the multi-language story. Code, comments and test names stay in English.
+- **Rule sentence:** `describeRule` in `messages.ts` repeats the backend's reading of the `*` wildcards in a pattern; if the pattern syntax changes, change both.
 - **Types:** the interfaces in the frontend mirror the API contract (camelCase JSON, dates as `YYYY-MM-DD` strings). When an endpoint changes, update both sides in the same story.
 - **TypeScript settings:** `erasableSyntaxOnly` is on, so use union types of string literals instead of `enum`; `verbatimModuleSyntax` is on, so import types with `import type`.
 
