@@ -80,4 +80,34 @@ public class CategorizerTests
 
         Assert.Null(category);
     }
+
+    [Fact]
+    public void Categorize_PatternWithTrailingWildcard_MatchesWordsStartingWithIt()
+    {
+        var categorizer = new Categorizer([new Rule("binter*", Category.Groceries)]);
+
+        var category = categorizer.Categorize("tj-bintercanarias ejemplo", -45m);
+
+        Assert.Equal(Category.Groceries, category);
+    }
+
+    [Fact]
+    public void Categorize_PatternWithLeadingWildcard_MatchesWordsEndingWithIt()
+    {
+        var categorizer = new Categorizer([new Rule("*canarias", Category.Groceries)]);
+
+        var category = categorizer.Categorize("tj-bintercanarias ejemplo", -45m);
+
+        Assert.Equal(Category.Groceries, category);
+    }
+
+    [Fact]
+    public void Categorize_PatternWithWildcardAtBothEnds_MatchesInsideAWord()
+    {
+        var categorizer = new Categorizer([new Rule("*binter*", Category.Groceries)]);
+
+        var category = categorizer.Categorize("tj-xbintercanariasx", -45m);
+
+        Assert.Equal(Category.Groceries, category);
+    }
 }

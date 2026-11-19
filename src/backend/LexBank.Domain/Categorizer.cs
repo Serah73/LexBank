@@ -9,11 +9,18 @@ public class Categorizer(IReadOnlyList<Rule> rules)
     public Category? Categorize(string description, decimal amount)
     {
         var normalizedDescription = Normalize(description);
-        return rules.OrderBy(r => r.Priority).FirstOrDefault(r => r.AcceptsAmount(amount) && ContainsWord(normalizedDescription, Normalize(r.Pattern)))?.Category;
+        return rules.OrderBy(r => r.Priority)
+            .FirstOrDefault(r => r.AcceptsAmount(amount) && Matches(normalizedDescription, Normalize(r.Pattern)))?.Category;
     }
 
-    private static bool ContainsWord(string text, string word) =>
-        Regex.IsMatch(text, $@"(?<![\p{{L}}\p{{N}}]){Regex.Escape(word)}(?![\p{{L}}\p{{N}}])");
+    // A pattern matches whole words; a "*" at either end also accepts a longer word that starts or ends with it.
+    private static bool Matches(string text, string pattern)
+    {
+        var word = pattern.Trim('*');
+        var wordStart = pattern.StartsWith('*') ? string.Empty : @"(?<![\p{L}\p{N}])";
+        var wordEnd = pattern.EndsWith('*') ? string.Empty : @"(?![\p{L}\p{N}])";
+        return Regex.IsMatch(text, wordStart + Regex.Escape(word) + wordEnd);
+    }
 
     private static string Normalize(string text)
     {

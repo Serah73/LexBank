@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LexBank.Infrastructure.Migrations
 {
     [DbContext(typeof(LexBankDbContext))]
-    [Migration("20261119165228_InitialCreate")]
+    [Migration("20261119173358_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -235,6 +235,14 @@ namespace LexBank.Infrastructure.Migrations
                         new
                         {
                             Id = 23,
+                            Category = "Groceries",
+                            Pattern = "5 oceanos",
+                            Priority = 6,
+                            Sign = "Expense"
+                        },
+                        new
+                        {
+                            Id = 24,
                             Category = "Restaurants",
                             Pattern = "restaurante",
                             Priority = 7,
@@ -242,7 +250,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 24,
+                            Id = 25,
                             Category = "Restaurants",
                             Pattern = "cafetería",
                             Priority = 7,
@@ -250,7 +258,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 25,
+                            Id = 26,
                             Category = "Restaurants",
                             Pattern = "bar",
                             Priority = 7,
@@ -258,7 +266,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 26,
+                            Id = 27,
                             Category = "Restaurants",
                             Pattern = "pizzería",
                             Priority = 7,
@@ -266,7 +274,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 27,
+                            Id = 28,
                             Category = "Restaurants",
                             Pattern = "burger",
                             Priority = 7,
@@ -274,7 +282,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 28,
+                            Id = 29,
                             Category = "Restaurants",
                             Pattern = "comida",
                             Priority = 7,
@@ -282,7 +290,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 29,
+                            Id = 30,
                             Category = "Restaurants",
                             Pattern = "cena",
                             Priority = 7,
@@ -290,7 +298,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 30,
+                            Id = 31,
                             Category = "Restaurants",
                             Pattern = "desayuno",
                             Priority = 7,
@@ -298,7 +306,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 31,
+                            Id = 32,
                             Category = "Restaurants",
                             Pattern = "bocata",
                             Priority = 7,
@@ -306,7 +314,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 32,
+                            Id = 33,
                             Category = "Restaurants",
                             Pattern = "mcdonald",
                             Priority = 7,
@@ -314,7 +322,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 33,
+                            Id = 34,
                             Category = "Restaurants",
                             Pattern = "mc donalds",
                             Priority = 7,
@@ -322,7 +330,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 34,
+                            Id = 35,
                             Category = "Restaurants",
                             Pattern = "burger king",
                             Priority = 7,
@@ -330,7 +338,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 35,
+                            Id = 36,
                             Category = "Clothing",
                             Pattern = "moda",
                             Priority = 8,
@@ -338,7 +346,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 36,
+                            Id = 37,
                             Category = "Clothing",
                             Pattern = "textil",
                             Priority = 8,
@@ -346,7 +354,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 37,
+                            Id = 38,
                             Category = "Clothing",
                             Pattern = "boutique",
                             Priority = 8,
@@ -354,7 +362,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 38,
+                            Id = 39,
                             Category = "Clothing",
                             Pattern = "zara",
                             Priority = 8,
@@ -362,7 +370,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 39,
+                            Id = 40,
                             Category = "Clothing",
                             Pattern = "springfield",
                             Priority = 8,
@@ -370,7 +378,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 40,
+                            Id = 41,
                             Category = "Clothing",
                             Pattern = "primark",
                             Priority = 8,
@@ -378,7 +386,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 41,
+                            Id = 42,
                             Category = "Clothing",
                             Pattern = "bershka",
                             Priority = 8,
@@ -386,7 +394,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 42,
+                            Id = 43,
                             Category = "Footwear",
                             Pattern = "zapatería",
                             Priority = 9,
@@ -394,7 +402,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 43,
+                            Id = 44,
                             Category = "Footwear",
                             Pattern = "calzado",
                             Priority = 9,
@@ -402,7 +410,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 44,
+                            Id = 45,
                             Category = "Jewelry",
                             Pattern = "joyería",
                             Priority = 10,
@@ -410,7 +418,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 45,
+                            Id = 46,
                             Category = "Jewelry",
                             Pattern = "relojería",
                             Priority = 10,
@@ -418,7 +426,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 46,
+                            Id = 47,
                             Category = "Jewelry",
                             Pattern = "pandora",
                             Priority = 10,
@@ -426,7 +434,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 47,
+                            Id = 48,
                             Category = "Home",
                             Pattern = "ferretería",
                             Priority = 11,
@@ -434,7 +442,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 48,
+                            Id = 49,
                             Category = "Home",
                             Pattern = "bricolaje",
                             Priority = 11,
@@ -442,7 +450,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 49,
+                            Id = 50,
                             Category = "Home",
                             Pattern = "muebles",
                             Priority = 11,
@@ -450,7 +458,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 50,
+                            Id = 51,
                             Category = "Home",
                             Pattern = "ikea",
                             Priority = 11,
@@ -458,7 +466,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 51,
+                            Id = 52,
                             Category = "Home",
                             Pattern = "leroy",
                             Priority = 11,
@@ -466,7 +474,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 52,
+                            Id = 53,
                             Category = "Health",
                             Pattern = "farmacia",
                             Priority = 12,
@@ -474,7 +482,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 53,
+                            Id = 54,
                             Category = "Health",
                             Pattern = "fcia",
                             Priority = 12,
@@ -482,7 +490,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 54,
+                            Id = 55,
                             Category = "Health",
                             Pattern = "médico",
                             Priority = 12,
@@ -490,7 +498,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 55,
+                            Id = 56,
                             Category = "Health",
                             Pattern = "clínica",
                             Priority = 12,
@@ -498,7 +506,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 56,
+                            Id = 57,
                             Category = "Health",
                             Pattern = "dental",
                             Priority = 12,
@@ -506,7 +514,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 57,
+                            Id = 58,
                             Category = "Health",
                             Pattern = "óptica",
                             Priority = 12,
@@ -514,7 +522,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 58,
+                            Id = 59,
                             Category = "Health",
                             Pattern = "hospital",
                             Priority = 12,
@@ -522,7 +530,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 59,
+                            Id = 60,
                             Category = "Transport",
                             Pattern = "parking",
                             Priority = 13,
@@ -530,7 +538,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 60,
+                            Id = 61,
                             Category = "Transport",
                             Pattern = "aparcamiento",
                             Priority = 13,
@@ -538,7 +546,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 61,
+                            Id = 62,
                             Category = "Transport",
                             Pattern = "gasolinera",
                             Priority = 13,
@@ -546,7 +554,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 62,
+                            Id = 63,
                             Category = "Transport",
                             Pattern = "combustible",
                             Priority = 13,
@@ -554,7 +562,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 63,
+                            Id = 64,
                             Category = "Transport",
                             Pattern = "combustibles",
                             Priority = 13,
@@ -562,7 +570,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 64,
+                            Id = 65,
                             Category = "Transport",
                             Pattern = "taxi",
                             Priority = 13,
@@ -570,7 +578,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 65,
+                            Id = 66,
                             Category = "Transport",
                             Pattern = "itv",
                             Priority = 13,
@@ -578,7 +586,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 66,
+                            Id = 67,
                             Category = "Transport",
                             Pattern = "peaje",
                             Priority = 13,
@@ -586,7 +594,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 67,
+                            Id = 68,
                             Category = "Transport",
                             Pattern = "guagua",
                             Priority = 13,
@@ -594,7 +602,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 68,
+                            Id = 69,
                             Category = "Transport",
                             Pattern = "tgas",
                             Priority = 13,
@@ -602,7 +610,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 69,
+                            Id = 70,
                             Category = "Transport",
                             Pattern = "titsa",
                             Priority = 13,
@@ -610,7 +618,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 70,
+                            Id = 71,
                             Category = "Transport",
                             Pattern = "renfe",
                             Priority = 13,
@@ -618,7 +626,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 71,
+                            Id = 72,
                             Category = "Travel",
                             Pattern = "airline",
                             Priority = 14,
@@ -626,7 +634,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 72,
+                            Id = 73,
                             Category = "Travel",
                             Pattern = "airlines",
                             Priority = 14,
@@ -634,7 +642,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 73,
+                            Id = 74,
                             Category = "Travel",
                             Pattern = "hotel",
                             Priority = 14,
@@ -642,7 +650,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 74,
+                            Id = 75,
                             Category = "Travel",
                             Pattern = "airbnb",
                             Priority = 14,
@@ -650,7 +658,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 75,
+                            Id = 76,
                             Category = "Travel",
                             Pattern = "aeropuerto",
                             Priority = 14,
@@ -658,7 +666,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 76,
+                            Id = 77,
                             Category = "Travel",
                             Pattern = "booking",
                             Priority = 14,
@@ -666,7 +674,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 77,
+                            Id = 78,
                             Category = "Travel",
                             Pattern = "bkg",
                             Priority = 14,
@@ -674,7 +682,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 78,
+                            Id = 79,
                             Category = "Travel",
                             Pattern = "vueling",
                             Priority = 14,
@@ -682,17 +690,9 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 79,
-                            Category = "Travel",
-                            Pattern = "binter",
-                            Priority = 14,
-                            Sign = "Expense"
-                        },
-                        new
-                        {
                             Id = 80,
                             Category = "Travel",
-                            Pattern = "balearia",
+                            Pattern = "*binter*",
                             Priority = 14,
                             Sign = "Expense"
                         },
@@ -700,13 +700,21 @@ namespace LexBank.Infrastructure.Migrations
                         {
                             Id = 81,
                             Category = "Travel",
-                            Pattern = "sixt",
+                            Pattern = "balearia",
                             Priority = 14,
                             Sign = "Expense"
                         },
                         new
                         {
                             Id = 82,
+                            Category = "Travel",
+                            Pattern = "sixt",
+                            Priority = 14,
+                            Sign = "Expense"
+                        },
+                        new
+                        {
+                            Id = 83,
                             Category = "Pets",
                             Pattern = "veterinario",
                             Priority = 15,
@@ -714,7 +722,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 83,
+                            Id = 84,
                             Category = "Pets",
                             Pattern = "mascota",
                             Priority = 15,
@@ -722,7 +730,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 84,
+                            Id = 85,
                             Category = "Pets",
                             Pattern = "kiwoko",
                             Priority = 15,
@@ -730,7 +738,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 85,
+                            Id = 86,
                             Category = "Cash",
                             Pattern = "cajero",
                             Priority = 16,
@@ -738,7 +746,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 86,
+                            Id = 87,
                             Category = "Cash",
                             Pattern = "retirada",
                             Priority = 16,
@@ -746,17 +754,9 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 87,
-                            Category = "TransfersOut",
-                            Pattern = "bizum",
-                            Priority = 17,
-                            Sign = "Expense"
-                        },
-                        new
-                        {
                             Id = 88,
                             Category = "TransfersOut",
-                            Pattern = "trf",
+                            Pattern = "bizum",
                             Priority = 17,
                             Sign = "Expense"
                         },
@@ -764,13 +764,21 @@ namespace LexBank.Infrastructure.Migrations
                         {
                             Id = 89,
                             Category = "TransfersOut",
-                            Pattern = "transferencia",
+                            Pattern = "trf",
                             Priority = 17,
                             Sign = "Expense"
                         },
                         new
                         {
                             Id = 90,
+                            Category = "TransfersOut",
+                            Pattern = "transferencia",
+                            Priority = 17,
+                            Sign = "Expense"
+                        },
+                        new
+                        {
+                            Id = 91,
                             Category = "TransfersIn",
                             Pattern = "bizum",
                             Priority = 18,
@@ -778,7 +786,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 91,
+                            Id = 92,
                             Category = "TransfersIn",
                             Pattern = "trf",
                             Priority = 18,
@@ -786,7 +794,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 92,
+                            Id = 93,
                             Category = "TransfersIn",
                             Pattern = "transferencia",
                             Priority = 18,
@@ -794,7 +802,7 @@ namespace LexBank.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 93,
+                            Id = 94,
                             Category = "TransfersIn",
                             Pattern = "devolución",
                             Priority = 18,
