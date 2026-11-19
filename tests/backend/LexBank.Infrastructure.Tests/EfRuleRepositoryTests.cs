@@ -43,6 +43,11 @@ public class EfRuleRepositoryTests : IDisposable
     [InlineData("tj-vueling airlines", -60, Category.Travel)]
     [InlineData("tj-5 oceanos ejemplo", -30, Category.Groceries)]
     [InlineData("tj-bintercanarias ejemplo", -45, Category.Travel)]
+    [InlineData("tj-mercadonasl ejemplo", -30, Category.Groceries)]
+    [InlineData("tj-supermercados ejemplo", -30, Category.Groceries)]
+    [InlineData("tj-mcdonalds ejemplo", -8, Category.Restaurants)]
+    [InlineData("tj-hoteles ejemplo", -90, Category.Travel)]
+    [InlineData("tj-combustibles ejemplo", -40, Category.Transport)]
     [InlineData("tj-kiwoko", -25, Category.Pets)]
     [InlineData("tj-cajero rural", -50, Category.Cash)]
     public async Task ListAsync_AfterCreatingTheDatabase_ReturnsSeededRulesThatCategorizeAsExpected(
