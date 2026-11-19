@@ -93,7 +93,7 @@ public class StatementsEndpointTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Upload_NoRuleMatches_ReturnsANullCategory()
+    public async Task Upload_NoRuleMatches_ReturnsUncategorizedWithoutRule()
     {
         var reader = new StubStatementReader
         {
@@ -105,7 +105,8 @@ public class StatementsEndpointTests : IAsyncLifetime
 
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var first = body.RootElement.GetProperty("transactions")[0];
-        Assert.Equal(JsonValueKind.Null, first.GetProperty("category").ValueKind);
+        Assert.Equal("Uncategorized", first.GetProperty("category").GetString());
+        Assert.Equal(JsonValueKind.Null, first.GetProperty("rule").ValueKind);
     }
 
     [Fact]
@@ -145,7 +146,62 @@ public class StatementsEndpointTests : IAsyncLifetime
 
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var categories = body.RootElement.EnumerateArray().Select(t => t.GetProperty("category").GetString());
-        Assert.Equal(["Groceries", null], categories);
+        Assert.Equal(["Groceries", "Uncategorized"], categories);
+    }
+
+    [Fact]
+    public async Task Upload_RuleMatches_ReturnsThePatternAndSignOfTheRule()
+    {
+        var reader = new StubStatementReader
+        {
+            Transactions = [new Transaction(new DateOnly(2025, 1, 10), "tj-mercadona finca espana", -23.40m, 100m, Bank.Ruralvia)],
+        };
+        using var client = await ClientReadingWithAsync(reader);
+
+        var response = await client.PostAsync("/api/statements", AnyFileUpload());
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var rule = body.RootElement.GetProperty("transactions")[0].GetProperty("rule");
+        Assert.Equal("*mercadona*", rule.GetProperty("pattern").GetString());
+        Assert.Equal("Expense", rule.GetProperty("sign").GetString());
+    }
+
+    [Fact]
+    public async Task Upload_SeveralRulesMatch_ReturnsTheRuleWithTheHighestPriority()
+    {
+        var reader = new StubStatementReader
+        {
+            Transactions = [new Transaction(new DateOnly(2025, 1, 10), "cargo bizum - bocata", -5m, 100m, Bank.Ruralvia)],
+        };
+        using var client = await ClientReadingWithAsync(reader);
+
+        var response = await client.PostAsync("/api/statements", AnyFileUpload());
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var first = body.RootElement.GetProperty("transactions")[0];
+        Assert.Equal("bocata", first.GetProperty("rule").GetProperty("pattern").GetString());
+        Assert.Equal("Restaurants", first.GetProperty("category").GetString());
+    }
+
+    [Fact]
+    public async Task ListTransactions_AfterAnUpload_ReturnsTheRuleOfEachTransaction()
+    {
+        var reader = new StubStatementReader
+        {
+            Transactions =
+            [
+                new Transaction(new DateOnly(2025, 1, 10), "tj-mercadona finca espana", -23.40m, 100m, Bank.Ruralvia),
+                new Transaction(new DateOnly(2025, 1, 9), "tj-fauca", -4.80m, 123.40m, Bank.Ruralvia),
+            ],
+        };
+        using var client = await ClientReadingWithAsync(reader);
+        await client.PostAsync("/api/statements", AnyFileUpload());
+
+        var response = await client.GetAsync("/api/transactions");
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var rules = body.RootElement.EnumerateArray().Select(t => t.GetProperty("rule"));
+        Assert.Equal(["*mercadona*", null], rules.Select(r => r.ValueKind == JsonValueKind.Null ? null : r.GetProperty("pattern").GetString()));
     }
 
     [Fact]
