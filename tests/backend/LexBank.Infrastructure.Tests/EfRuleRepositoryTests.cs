@@ -56,7 +56,7 @@ public class EfRuleRepositoryTests : IDisposable
         var repository = new EfRuleRepository(_context);
 
         var rules = await repository.ListAsync();
-        var category = new Categorizer(rules).Categorize(description, (decimal)amount);
+        var category = new Categorizer(rules).Categorize(description, (decimal)amount).Category;
 
         Assert.Equal(expected, category);
     }
