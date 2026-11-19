@@ -6,11 +6,12 @@ namespace LexBank.Domain;
 
 public class Categorizer(IReadOnlyList<Rule> rules)
 {
-    public Category? Categorize(string description, decimal amount)
+    public Categorization Categorize(string description, decimal amount)
     {
         var normalizedDescription = Normalize(description);
-        return rules.OrderBy(r => r.Priority)
-            .FirstOrDefault(r => r.AcceptsAmount(amount) && Matches(normalizedDescription, Normalize(r.Pattern)))?.Category;
+        var rule = rules.OrderBy(r => r.Priority)
+            .FirstOrDefault(r => r.AcceptsAmount(amount) && Matches(normalizedDescription, Normalize(r.Pattern)));
+        return rule is null ? new Categorization(Category.Uncategorized, null) : new Categorization(rule.Category, rule);
     }
 
     // A pattern matches whole words; a "*" at either end also accepts a longer word that starts or ends with it.

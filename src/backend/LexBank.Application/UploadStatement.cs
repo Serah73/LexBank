@@ -14,7 +14,11 @@ public class UploadStatement(
         var result = reader.Read(stream);
         var categorizer = new Categorizer(await ruleRepository.ListAsync());
         var transactions = result.Transactions
-            .Select(t => t with { Category = categorizer.Categorize(t.Description, t.Amount) })
+            .Select(t =>
+            {
+                var categorization = categorizer.Categorize(t.Description, t.Amount);
+                return t with { Category = categorization.Category, Rule = categorization.Rule };
+            })
             .ToList();
         var storedCopies = (await repository.ListAsync(email)).GroupBy(t => t).ToDictionary(g => g.Key, g => g.Count());
 

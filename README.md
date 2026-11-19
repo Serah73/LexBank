@@ -138,6 +138,7 @@ The project is under active development.
 | Manual mapping of headers and bank selection | Planned |
 | PDF import | Planned |
 | Automatic categorization of transactions on import, with a seeded set of rules | Implemented |
+| Display of the rule that assigned each category | Implemented |
 | Corrections and rule management | Planned |
 | Accuracy measurement and spending charts | Planned |
 | Spanish and English user interface | Planned (Spanish only for now) |

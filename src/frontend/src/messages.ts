@@ -21,6 +21,16 @@ export type Category =
   | 'Cash'
   | 'TransfersOut'
   | 'TransfersIn'
+  | 'Uncategorized'
+
+export type RuleSign = 'Any' | 'Expense' | 'Income'
+
+export interface Rule {
+  pattern: string
+  category: Category
+  sign: RuleSign
+  priority: number
+}
 
 export type StatementError = 'UnsupportedStatement' | 'ProcessingFailed'
 
@@ -57,6 +67,29 @@ export const categoryNames: Record<Category, string> = {
   Cash: 'Efectivo',
   TransfersOut: 'Transferencias y Bizum enviados',
   TransfersIn: 'Transferencias y Bizum recibidos',
+  Uncategorized: 'Sin categoría',
+}
+
+const ruleSignNames: Record<RuleSign, string> = {
+  Any: 'Movimiento',
+  Expense: 'Gasto',
+  Income: 'Ingreso',
+}
+
+// A "*" at the start or the end of a pattern relaxes that side of the whole-word match.
+export function describeRule({ pattern, sign }: Rule): string {
+  const word = pattern.replace(/^\*|\*$/g, '')
+  const startsOpen = pattern.startsWith('*')
+  const endsOpen = pattern.endsWith('*')
+  const match =
+    startsOpen && endsOpen
+      ? `cuya descripción contiene «${word}»`
+      : endsOpen
+        ? `con una palabra que empieza por «${word}»`
+        : startsOpen
+          ? `con una palabra que termina en «${word}»`
+          : `con la palabra «${word}»`
+  return `${ruleSignNames[sign]} ${match}`
 }
 
 export const failedRowMessages: Record<FailedRowReason, string> = {

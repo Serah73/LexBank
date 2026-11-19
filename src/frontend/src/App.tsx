@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import LogInForm from './LogInForm'
-import { bankNames, categoryNames, failedRowMessages, statementErrorMessages } from './messages'
-import type { Bank, Category, FailedRowReason, StatementError } from './messages'
+import { bankNames, categoryNames, describeRule, failedRowMessages, statementErrorMessages } from './messages'
+import type { Bank, Category, FailedRowReason, Rule, StatementError } from './messages'
 import SignUpForm from './SignUpForm'
 
 interface Transaction {
@@ -11,7 +11,8 @@ interface Transaction {
   amount: number
   balance: number
   bank: Bank
-  category: Category | null
+  category: Category
+  rule: Rule | null
 }
 
 interface FailedRow {
@@ -127,6 +128,7 @@ function App() {
               <th>Saldo</th>
               <th>Banco</th>
               <th>Categoría</th>
+              <th>Regla</th>
             </tr>
           </thead>
           <tbody>
@@ -137,7 +139,8 @@ function App() {
                 <td>{t.amount}</td>
                 <td>{t.balance}</td>
                 <td>{bankNames[t.bank]}</td>
-                <td>{t.category ? categoryNames[t.category] : 'Sin categoría'}</td>
+                <td>{categoryNames[t.category]}</td>
+                <td>{t.rule && describeRule(t.rule)}</td>
               </tr>
             ))}
           </tbody>

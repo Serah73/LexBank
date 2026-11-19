@@ -90,7 +90,7 @@ public class EfTransactionRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task ListAsync_StoredTransactionsWithAndWithoutCategory_KeepTheirCategory()
+    public async Task ListAsync_StoredTransactionsCategorizedAndUncategorized_KeepTheirCategory()
     {
         var repository = new EfTransactionRepository(_context);
 
@@ -101,6 +101,34 @@ public class EfTransactionRepositoryTests : IDisposable
         ]);
         var stored = await repository.ListAsync(Email);
 
-        Assert.Equal([Category.Groceries, null], stored.Select(t => t.Category));
+        Assert.Equal([Category.Groceries, Category.Uncategorized], stored.Select(t => t.Category));
+    }
+
+    [Fact]
+    public async Task ListAsync_StoredTransactionCategorizedByARule_ReturnsThatRuleWithoutDuplicatingIt()
+    {
+        var repository = new EfTransactionRepository(_context);
+        var rules = await new EfRuleRepository(_context).ListAsync();
+        var rule = rules.Single(r => r.Pattern == "*mercadona*");
+
+        await repository.AddAsync(Email,
+        [
+            new Transaction(new DateOnly(2025, 1, 10), "COMPRA MERCADONA", -10.00m, 100.00m, Bank.Ruralvia, Category.Groceries) { Rule = rule },
+        ]);
+        var stored = await repository.ListAsync(Email);
+
+        Assert.Equal(rule, stored.Single().Rule);
+        Assert.Equal(rules.Count, await _context.Set<Rule>().CountAsync());
+    }
+
+    [Fact]
+    public async Task ListAsync_StoredTransactionWithoutRule_ReturnsNoRule()
+    {
+        var repository = new EfTransactionRepository(_context);
+
+        await repository.AddAsync(Email, [new Transaction(new DateOnly(2025, 1, 9), "SIN REGLA", -5.00m, 110.00m, Bank.Ruralvia)]);
+        var stored = await repository.ListAsync(Email);
+
+        Assert.Null(stored.Single().Rule);
     }
 }

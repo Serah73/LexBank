@@ -20,4 +20,5 @@ public enum Category
     Cash,
     TransfersOut,
     TransfersIn,
+    Uncategorized,
 }

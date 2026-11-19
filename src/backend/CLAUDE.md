@@ -16,7 +16,7 @@ Run from the repository root.
 
 ## Where things go
 
-- **Domain:** records and enums with no dependencies (`Transaction`, `Category`, `Rule`, `Categorizer`, `FailedRow`, `FailedRowReason`).
+- **Domain:** records and enums with no dependencies (`Transaction`, `Category`, `Rule`, `Categorization`, `Categorizer`, `FailedRow`, `FailedRowReason`).
 - **Application:** one class per use case, named with a verb (`UploadStatement`, method `ExecuteAsync`), plus the interfaces the use cases need (`IStatementReader`, `ITransactionRepository`, `IRuleRepository`).
   `UploadStatement` uses the first `IStatementReader` whose `CanRead(fileName)` is true: a new format is a new reader registered in `Program.cs`.
   `UploadStatement` returns `UploadStatementResult` (including `SkippedTransactions`), not the reader's result: the reader knows nothing about duplicates.
@@ -27,8 +27,9 @@ Run from the repository root.
 ## Conventions
 
 - **Codes, not text:** responses carry stable codes (enum names serialized as strings, error codes such as `UnsupportedStatement`). Never return user-facing messages; the frontend translates them in `src/frontend/src/messages.ts`. A new code needs its translation there.
-- **Rules:** priority 1 is the highest. A pattern matches whole words; a `*` at either end relaxes that side. A lone `*` matches everything and is not guarded. Changing `InitialRules` means regenerating `InitialCreate` and running `./reset-db.sh`.
-- **Duplicates and category:** `UploadStatement` categorizes the file's transactions before comparing them with the stored ones, because `Transaction` equality includes `Category`. If rules can change after import, compare ignoring the category.
+- **Rules:** priority 1 is the highest. A pattern matches whole words; a `*` at either end relaxes that side. A lone `*` matches everything and is not guarded. A seeded rule's id is its priority times 100 plus its position in the category's list, so append new patterns at the end of the list. Changing `InitialRules` means regenerating `InitialCreate` and running `./reset-db.sh`.
+- **Duplicates and category:** `UploadStatement` categorizes the file's transactions before comparing them with the stored ones, because `Transaction` equality includes `Category` and `Rule`. If rules can change after import, compare ignoring the category.
+- **Rule of a transaction:** `Transaction.Rule` is an `init` property outside the constructor, because EF cannot bind navigations through it. `EfTransactionRepository.AddAsync` replaces it with the stored rule (found by value), otherwise EF inserts a copy; `ListAsync` must `Include` it.
 - **Persistence:** `Transaction` has no id property; `Id` is an EF Core shadow property. Do not add persistence concerns to Domain types.
 - **Data per user:** `ITransactionRepository` always receives the user's email; `Transaction.UserId` is a shadow property like `Id`. A new endpoint that reads or writes transactions must be protected and must pass the email of the session.
 - **Passwords:** never store or log one in clear. `User` overrides `PrintMembers` so its `ToString()` hides the hash; keep it when changing the record.
