@@ -16,6 +16,7 @@ builder.Services.AddScoped<IStatementReader, RevolutCsvReader>();
 builder.Services.AddDbContext<LexBankDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("LexBank")));
 builder.Services.AddScoped<ITransactionRepository, EfTransactionRepository>();
+builder.Services.AddScoped<IRuleRepository, EfRuleRepository>();
 builder.Services.AddScoped<UploadStatement>();
 builder.Services.AddScoped<IUserRepository, EfUserRepository>();
 builder.Services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();

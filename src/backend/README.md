@@ -10,9 +10,9 @@ The backend follows Clean Architecture ([ADR-0002](../../docs/adr/0002-clean-arc
 
 | Project | Responsibility | References |
 |---|---|---|
-| `LexBank.Domain` | Business concepts: `Transaction`, `Bank`, `FailedRow`, `FailedRowReason`, `User`. | Nothing |
-| `LexBank.Application` | Use cases (`UploadStatement`, `SignUp`, `LogIn`) and the interfaces they need (`IStatementReader`, `ITransactionRepository`, `IUserRepository`, `IPasswordHasher`). | Domain |
-| `LexBank.Infrastructure` | Implementations: `RuralviaXlsxReader` (ClosedXML), `RevolutCsvReader`, `EfTransactionRepository`, `EfUserRepository` and `LexBankDbContext` (EF Core), `IdentityPasswordHasher` (password hashing with `Microsoft.Extensions.Identity.Core`), migrations. | Application |
+| `LexBank.Domain` | Business concepts: `Transaction`, `Bank`, `Category`, `AmountSign`, `Rule`, `Categorizer`, `FailedRow`, `FailedRowReason`, `User`. | Nothing |
+| `LexBank.Application` | Use cases (`UploadStatement`, `SignUp`, `LogIn`) and the interfaces they need (`IStatementReader`, `ITransactionRepository`, `IRuleRepository`, `IUserRepository`, `IPasswordHasher`). | Domain |
+| `LexBank.Infrastructure` | Implementations: `RuralviaXlsxReader` (ClosedXML), `RevolutCsvReader`, `EfTransactionRepository`, `EfRuleRepository`, `EfUserRepository` and `LexBankDbContext` (EF Core), `InitialRules` (the seeded rules), `IdentityPasswordHasher` (password hashing with `Microsoft.Extensions.Identity.Core`), migrations. | Application |
 | `LexBank.Api` | Minimal API endpoints and dependency injection. | Application, Infrastructure |
 
 ## API
@@ -38,6 +38,8 @@ Authentication uses a session cookie (`HttpOnly`, `SameSite=Strict`) that carrie
 An email is valid when it has at least one character before and after the first `@` and at most 256 characters. A password must have between 8 and 128 characters; there are no composition rules. Emails are compared without distinguishing case (the collation of SQL Server) and are stored as written. Passwords are stored only as a hash.
 
 Each transaction carries the bank it was read from as a stable code (`bank`: `Ruralvia` or `Revolut`), stored as text. A transaction is considered already imported when a transaction stored for the same user has the same date, description, amount, balance and bank. Identical rows inside the same file are kept: only as many copies as are already stored are skipped.
+
+Each transaction also carries its category as a stable code (`category`, for example `Groceries`), or `null` when no rule matches. The category is assigned when the statement is imported, with the rules stored in the database; the initial set is seeded by the first migration. A rule has a text pattern, an amount sign (expense, income or any), a category and a priority, where 1 is the highest. A rule matches a transaction when its sign fits the amount and its pattern appears in the description, ignoring case and accents. The pattern matches whole words; a `*` at its start or end also accepts a longer word that ends or starts with it (`*binter*` matches `bintercanarias`). When several rules match, the one with the lowest priority number wins.
 
 In the development environment, the interactive documentation (Swagger UI) is available at `http://localhost:5236/swagger`.
 
@@ -66,7 +68,7 @@ Server=(localdb)\MSSQLLocalDB;Database=LexBank;Integrated Security=true
 
 LocalDB runs under your Windows user and starts on demand. It does not listen on the network, so it does not show up under `localhost\SQLEXPRESS` or any other instance: you must connect to it by its own name. The files are in your user folder (`LexBank.mdf` and `LexBank_log.ldf`); do not open them directly, SQL Server keeps them locked.
 
-The `LexBank` database has three tables: `Transaction` (the imported transactions, each one linked to its user through `UserId`), `Users` (the accounts, with a unique index on `Email`) and `__EFMigrationsHistory` (the migrations already applied).
+The `LexBank` database has four tables: `Transaction` (the imported transactions, each one linked to its user through `UserId`), `Rule` (the categorization rules, common to all users), `Users` (the accounts, with a unique index on `Email`) and `__EFMigrationsHistory` (the migrations already applied).
 
 ## Inspect the data
 
@@ -84,15 +86,15 @@ Connect to the server `(localdb)\MSSQLLocalDB` with Windows authentication.
 
 ## Reset the database
 
-Stop the API, drop the database and start the API again; the migrations recreate it empty.
+Stop the API, drop the database and start the API again; the migrations recreate it with the seeded rules and no transactions.
 
 ```bash
-sqlcmd -S "(localdb)\\MSSQLLocalDB" -E -Q "DROP DATABASE LexBank"
+./reset-db.sh
 ```
 
 ## Migrations
 
-The EF Core CLI is a local tool (`.config/dotnet-tools.json`). Restore it once with `dotnet tool restore`. The development database holds no data worth keeping (the statements are re-imported from the source files), so while it stays that way the model changes are folded into a single `InitialCreate` migration instead of adding one per change: delete the contents of `Migrations`, regenerate it and drop the database.
+The EF Core CLI is a local tool (`.config/dotnet-tools.json`). Restore it once with `dotnet tool restore`. The development database holds no data worth keeping (the statements are re-imported from the source files), so while it stays that way the model changes are folded into a single `InitialCreate` migration instead of adding one per change: delete the contents of `Migrations`, regenerate it and drop the database. The seeded categorization rules live in that migration, so a change to `InitialRules` requires the same steps.
 
 ```bash
 dotnet ef migrations add InitialCreate --project src/backend/LexBank.Infrastructure --startup-project src/backend/LexBank.Api

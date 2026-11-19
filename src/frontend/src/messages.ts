@@ -2,6 +2,26 @@ export type FailedRowReason = 'InvalidDate' | 'InvalidAmount' | 'InvalidBalance'
 
 export type Bank = 'Ruralvia' | 'Revolut'
 
+export type Category =
+  | 'Interest'
+  | 'Salary'
+  | 'Savings'
+  | 'SavingsWithdrawal'
+  | 'Internal'
+  | 'Groceries'
+  | 'Restaurants'
+  | 'Clothing'
+  | 'Footwear'
+  | 'Jewelry'
+  | 'Home'
+  | 'Health'
+  | 'Transport'
+  | 'Travel'
+  | 'Pets'
+  | 'Cash'
+  | 'TransfersOut'
+  | 'TransfersIn'
+
 export type StatementError = 'UnsupportedStatement' | 'ProcessingFailed'
 
 export type SignUpError = 'EmailAlreadyRegistered' | 'InvalidEmail' | 'InvalidPassword' | 'SignUpFailed'
@@ -16,6 +36,27 @@ export const logInErrorMessages: Record<LogInError, string> = {
 export const bankNames: Record<Bank, string> = {
   Ruralvia: 'Ruralvía',
   Revolut: 'Revolut',
+}
+
+export const categoryNames: Record<Category, string> = {
+  Interest: 'Intereses',
+  Salary: 'Nómina',
+  Savings: 'Ahorro',
+  SavingsWithdrawal: 'Salida del ahorro',
+  Internal: 'Movimientos internos',
+  Groceries: 'Supermercado',
+  Restaurants: 'Restaurantes y cafeterías',
+  Clothing: 'Ropa',
+  Footwear: 'Calzado',
+  Jewelry: 'Joyería',
+  Home: 'Hogar',
+  Health: 'Salud',
+  Transport: 'Transporte y vehículo',
+  Travel: 'Viajes',
+  Pets: 'Mascotas',
+  Cash: 'Efectivo',
+  TransfersOut: 'Transferencias y Bizum enviados',
+  TransfersIn: 'Transferencias y Bizum recibidos',
 }
 
 export const failedRowMessages: Record<FailedRowReason, string> = {

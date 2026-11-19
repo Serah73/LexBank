@@ -77,6 +77,78 @@ public class StatementsEndpointTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Upload_RuleMatches_ReturnsTheCategoryOfTheRule()
+    {
+        var reader = new StubStatementReader
+        {
+            Transactions = [new Transaction(new DateOnly(2025, 1, 10), "tj-mercadona finca espana", -23.40m, 100m, Bank.Ruralvia)],
+        };
+        using var client = await ClientReadingWithAsync(reader);
+
+        var response = await client.PostAsync("/api/statements", AnyFileUpload());
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var first = body.RootElement.GetProperty("transactions")[0];
+        Assert.Equal("Groceries", first.GetProperty("category").GetString());
+    }
+
+    [Fact]
+    public async Task Upload_NoRuleMatches_ReturnsANullCategory()
+    {
+        var reader = new StubStatementReader
+        {
+            Transactions = [new Transaction(new DateOnly(2025, 1, 10), "tj-fauca", -4.80m, 100m, Bank.Ruralvia)],
+        };
+        using var client = await ClientReadingWithAsync(reader);
+
+        var response = await client.PostAsync("/api/statements", AnyFileUpload());
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var first = body.RootElement.GetProperty("transactions")[0];
+        Assert.Equal(JsonValueKind.Null, first.GetProperty("category").ValueKind);
+    }
+
+    [Fact]
+    public async Task Upload_SameCategorizedStatementTwice_SkipsTheDuplicates()
+    {
+        var reader = new StubStatementReader
+        {
+            Transactions = [new Transaction(new DateOnly(2025, 1, 10), "tj-mercadona finca espana", -23.40m, 100m, Bank.Ruralvia)],
+        };
+        using var client = await ClientReadingWithAsync(reader);
+
+        await client.PostAsync("/api/statements", AnyFileUpload());
+        var second = await client.PostAsync("/api/statements", AnyFileUpload());
+        var stored = await client.GetAsync("/api/transactions");
+
+        using var secondBody = JsonDocument.Parse(await second.Content.ReadAsStringAsync());
+        Assert.Equal(1, secondBody.RootElement.GetProperty("skippedTransactions").GetInt32());
+        using var storedBody = JsonDocument.Parse(await stored.Content.ReadAsStringAsync());
+        Assert.Equal(1, storedBody.RootElement.GetArrayLength());
+    }
+
+    [Fact]
+    public async Task ListTransactions_AfterAnUpload_ReturnsTheStoredCategory()
+    {
+        var reader = new StubStatementReader
+        {
+            Transactions =
+            [
+                new Transaction(new DateOnly(2025, 1, 10), "tj-mercadona finca espana", -23.40m, 100m, Bank.Ruralvia),
+                new Transaction(new DateOnly(2025, 1, 9), "tj-fauca", -4.80m, 123.40m, Bank.Ruralvia),
+            ],
+        };
+        using var client = await ClientReadingWithAsync(reader);
+        await client.PostAsync("/api/statements", AnyFileUpload());
+
+        var response = await client.GetAsync("/api/transactions");
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var categories = body.RootElement.EnumerateArray().Select(t => t.GetProperty("category").GetString());
+        Assert.Equal(["Groceries", null], categories);
+    }
+
+    [Fact]
     public async Task Upload_RuralviaStatement_ReturnsTransactionsWithTheRuralviaBankCode()
     {
         using var content = FixtureUpload();

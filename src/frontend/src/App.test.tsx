@@ -373,7 +373,7 @@ it('shows the transactions table with date, description, amount and balance', as
 
   await screen.findByRole('table')
   const headers = screen.getAllByRole('columnheader').map((h) => h.textContent)
-  expect(headers).toEqual(['Fecha', 'Descripción', 'Importe', 'Saldo', 'Banco'])
+  expect(headers).toEqual(['Fecha', 'Descripción', 'Importe', 'Saldo', 'Banco', 'Categoría'])
 })
 
 it('shows the bank name of each transaction in the table', async () => {
@@ -398,6 +398,47 @@ it('shows the bank name of each transaction in the table', async () => {
   expect(screen.getByRole('cell', { name: 'Revolut' })).toBeTruthy()
 })
 
+it('shows the Spanish name of the category of each transaction in the table', async () => {
+  stubApi(() =>
+    Promise.resolve(
+      Response.json({
+        transactions: [
+          { date: '2025-01-10', description: 'COMPRA', amount: -23.45, balance: 1000, bank: 'Ruralvia', category: 'Groceries' },
+          { date: '2025-01-09', description: 'A EUR Cuenta Remunerada', amount: -910, balance: 90, bank: 'Revolut', category: 'Savings' },
+        ],
+        failedRows: [],
+      }),
+    ),
+  )
+  const { container } = render(<App />)
+
+  uploadFile(container)
+
+  await screen.findByRole('table')
+  expect(screen.getByRole('columnheader', { name: 'Categoría' })).toBeTruthy()
+  expect(screen.getByRole('cell', { name: 'Supermercado' })).toBeTruthy()
+  expect(screen.getByRole('cell', { name: 'Ahorro' })).toBeTruthy()
+})
+
+it('shows "Sin categoría" for a transaction without category', async () => {
+  stubApi(() =>
+    Promise.resolve(
+      Response.json({
+        transactions: [
+          { date: '2025-01-10', description: 'TJ-FAUCA', amount: -4.8, balance: 100, bank: 'Ruralvia', category: null },
+        ],
+        failedRows: [],
+      }),
+    ),
+  )
+  const { container } = render(<App />)
+
+  uploadFile(container)
+
+  await screen.findByRole('table')
+  expect(screen.getByRole('cell', { name: 'Sin categoría' })).toBeTruthy()
+})
+
 it('shows the stored transactions when the page loads', async () => {
   vi.stubGlobal(
     'fetch',
@@ -410,7 +451,7 @@ it('shows the stored transactions when the page loads', async () => {
 
   await screen.findByRole('table')
   const cells = screen.getAllByRole('cell').map((c) => c.textContent)
-  expect(cells).toEqual(['2025-01-10', 'COMPRA', '-23.45', '1000', 'Ruralvía'])
+  expect(cells).toEqual(['2025-01-10', 'COMPRA', '-23.45', '1000', 'Ruralvía', 'Sin categoría'])
 })
 
 it('does not replace an uploaded statement with a late response to the initial load', async () => {
@@ -445,6 +486,7 @@ it('does not replace an uploaded statement with a late response to the initial l
     '-23.45',
     '1000',
     'Ruralvía',
+    'Sin categoría',
   ])
 })
 
