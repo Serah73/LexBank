@@ -14,6 +14,7 @@ public class LexBankDbContext(DbContextOptions<LexBankDbContext> options) : DbCo
             transaction.Property(t => t.Amount).HasPrecision(18, 2);
             transaction.Property(t => t.Balance).HasPrecision(18, 2);
             transaction.Property(t => t.Bank).HasConversion<string>().HasMaxLength(20);
+            transaction.Property(t => t.Category).HasConversion<string>().HasMaxLength(30);
             transaction.Property<int>("UserId");
             transaction.HasOne<User>().WithMany().HasForeignKey("UserId").IsRequired();
         });

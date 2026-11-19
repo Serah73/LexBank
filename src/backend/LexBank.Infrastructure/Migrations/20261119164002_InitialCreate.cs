@@ -36,6 +36,7 @@ namespace LexBank.Infrastructure.Migrations
                     Amount = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     Balance = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     Bank = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    Category = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: true),
                     UserId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>

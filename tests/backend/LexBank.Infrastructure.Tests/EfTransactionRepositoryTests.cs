@@ -88,4 +88,19 @@ public class EfTransactionRepositoryTests : IDisposable
 
         Assert.Equal([Bank.Ruralvia, Bank.Revolut], stored.Select(t => t.Bank));
     }
+
+    [Fact]
+    public async Task ListAsync_StoredTransactionsWithAndWithoutCategory_KeepTheirCategory()
+    {
+        var repository = new EfTransactionRepository(_context);
+
+        await repository.AddAsync(Email,
+        [
+            new Transaction(new DateOnly(2025, 1, 10), "COMPRA MERCADONA", -10.00m, 100.00m, Bank.Ruralvia, Category.Groceries),
+            new Transaction(new DateOnly(2025, 1, 9), "SIN REGLA", -5.00m, 110.00m, Bank.Ruralvia),
+        ]);
+        var stored = await repository.ListAsync(Email);
+
+        Assert.Equal([Category.Groceries, null], stored.Select(t => t.Category));
+    }
 }

@@ -43,6 +43,10 @@ namespace LexBank.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<string>("Category")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date");
 
