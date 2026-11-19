@@ -10,22 +10,25 @@ Run from the repository root.
 - All tests: `dotnet test`
 - One test project: `dotnet test tests/backend/LexBank.Api.Tests`
 - One test: `dotnet test --filter "FullyQualifiedName~<TestName>"`
+- Reset the development database: `./reset-db.sh` (stop the API first; it is recreated with the seeded rules on the next start)
 - Run the API: `dotnet run --project src/backend/LexBank.Api --launch-profile http` (`http://localhost:5236`, Swagger at `/swagger`)
 - Add a migration: `dotnet ef migrations add <Name> --project src/backend/LexBank.Infrastructure --startup-project src/backend/LexBank.Api` (run `dotnet tool restore` once)
 
 ## Where things go
 
-- **Domain:** records and enums with no dependencies (`Transaction`, `FailedRow`, `FailedRowReason`).
-- **Application:** one class per use case, named with a verb (`UploadStatement`, method `ExecuteAsync`), plus the interfaces the use cases need (`IStatementReader`, `ITransactionRepository`).
+- **Domain:** records and enums with no dependencies (`Transaction`, `Category`, `Rule`, `Categorizer`, `FailedRow`, `FailedRowReason`).
+- **Application:** one class per use case, named with a verb (`UploadStatement`, method `ExecuteAsync`), plus the interfaces the use cases need (`IStatementReader`, `ITransactionRepository`, `IRuleRepository`).
   `UploadStatement` uses the first `IStatementReader` whose `CanRead(fileName)` is true: a new format is a new reader registered in `Program.cs`.
   `UploadStatement` returns `UploadStatementResult` (including `SkippedTransactions`), not the reader's result: the reader knows nothing about duplicates.
-- **Infrastructure:** implementations of those interfaces. Readers locate columns by header name, never by position; a new reader must do the same and reject files where a header is missing. Third-party libraries (ClosedXML, EF Core, `Microsoft.Extensions.Identity.Core` for password hashing in `IdentityPasswordHasher`) are used only here.
+- **Infrastructure:** implementations of those interfaces. Readers locate columns by header name, never by position; a new reader must do the same and reject files where a header is missing. The initial categorization rules are in `InitialRules`, seeded through the migration. Third-party libraries (ClosedXML, EF Core, `Microsoft.Extensions.Identity.Core` for password hashing in `IdentityPasswordHasher`) are used only here.
 - **Api:** minimal API endpoints and dependency injection, all in `Program.cs`. Endpoints call a use case or a repository; they hold no business logic. The exceptions a use case throws (`InvalidEmailException`, `EmailAlreadyRegisteredException`...) are mapped to status codes and error codes in `Program.cs`.
   Authentication is a session cookie (ADR-0007): it carries the user's email, and the protected endpoints read it from the `ClaimsPrincipal`. `/api/users` and `/api/session` stay open.
 
 ## Conventions
 
 - **Codes, not text:** responses carry stable codes (enum names serialized as strings, error codes such as `UnsupportedStatement`). Never return user-facing messages; the frontend translates them in `src/frontend/src/messages.ts`. A new code needs its translation there.
+- **Rules:** priority 1 is the highest. A pattern matches whole words; a `*` at either end relaxes that side. A lone `*` matches everything and is not guarded. Changing `InitialRules` means regenerating `InitialCreate` and running `./reset-db.sh`.
+- **Duplicates and category:** `UploadStatement` categorizes the file's transactions before comparing them with the stored ones, because `Transaction` equality includes `Category`. If rules can change after import, compare ignoring the category.
 - **Persistence:** `Transaction` has no id property; `Id` is an EF Core shadow property. Do not add persistence concerns to Domain types.
 - **Data per user:** `ITransactionRepository` always receives the user's email; `Transaction.UserId` is a shadow property like `Id`. A new endpoint that reads or writes transactions must be protected and must pass the email of the session.
 - **Passwords:** never store or log one in clear. `User` overrides `PrintMembers` so its `ToString()` hides the hash; keep it when changing the record.

@@ -137,7 +137,8 @@ The project is under active development.
 | Bank of origin kept on each transaction and shown in the list | Implemented |
 | Manual mapping of headers and bank selection | Planned |
 | PDF import | Planned |
-| Deterministic categorization engine, corrections and rule management | Planned |
+| Automatic categorization of transactions on import, with a seeded set of rules | Implemented |
+| Corrections and rule management | Planned |
 | Accuracy measurement and spending charts | Planned |
 | Spanish and English user interface | Planned (Spanish only for now) |
 | Visual design with light and dark themes | Planned |
