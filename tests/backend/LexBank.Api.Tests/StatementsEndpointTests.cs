@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text.Json;
 using LexBank.Application;
 using LexBank.Domain;
@@ -530,5 +531,159 @@ public class StatementsEndpointTests : IAsyncLifetime
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.Equal("UnsupportedStatement", body.RootElement.GetProperty("error").GetString());
         Assert.False(body.RootElement.TryGetProperty("transactions", out _));
+    }
+
+    [Fact]
+    public async Task Upload_NewTransactions_ReturnsTheirIds()
+    {
+        var reader = new StubStatementReader
+        {
+            Transactions =
+            [
+                new Transaction(new DateOnly(2025, 1, 10), "COMPRA UNO", -10m, 100m, Bank.Ruralvia),
+                new Transaction(new DateOnly(2025, 1, 9), "COMPRA DOS", -5m, 110m, Bank.Ruralvia),
+            ],
+        };
+        using var client = await ClientReadingWithAsync(reader);
+
+        var response = await client.PostAsync("/api/statements", AnyFileUpload());
+        var stored = await client.GetAsync("/api/transactions");
+
+        using var uploaded = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var uploadedIds = uploaded.RootElement.GetProperty("transactions").EnumerateArray().Select(t => t.GetProperty("id").GetInt32()).ToArray();
+        using var list = JsonDocument.Parse(await stored.Content.ReadAsStringAsync());
+        var storedIds = list.RootElement.EnumerateArray().Select(t => t.GetProperty("id").GetInt32()).ToArray();
+        Assert.Equal(2, uploadedIds.Distinct().Count());
+        Assert.All(uploadedIds, id => Assert.True(id > 0));
+        Assert.Equal(storedIds, uploadedIds);
+    }
+
+    [Fact]
+    public async Task CorrectCategory_OwnTransaction_ReturnsItWithTheNewCategoryMarkedAsCorrected()
+    {
+        var reader = new StubStatementReader
+        {
+            Transactions = [new Transaction(new DateOnly(2025, 1, 10), "tj-mercadona finca espana", -23.40m, 100m, Bank.Ruralvia)],
+        };
+        using var client = await ClientReadingWithAsync(reader);
+        var upload = await client.PostAsync("/api/statements", AnyFileUpload());
+        using var uploaded = JsonDocument.Parse(await upload.Content.ReadAsStringAsync());
+        var id = uploaded.RootElement.GetProperty("transactions")[0].GetProperty("id").GetInt32();
+
+        var response = await client.PutAsJsonAsync($"/api/transactions/{id}/category", new { category = "Restaurants" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(id, body.RootElement.GetProperty("id").GetInt32());
+        Assert.Equal("Restaurants", body.RootElement.GetProperty("category").GetString());
+        Assert.True(body.RootElement.GetProperty("corrected").GetBoolean());
+    }
+
+    // A client of a user with one stored transaction categorized as Groceries by the rule "*mercadona*", and its id.
+    private async Task<(HttpClient Client, StubStatementReader Reader, int Id)> ClientWithOneTransactionAsync()
+    {
+        var reader = new StubStatementReader
+        {
+            Transactions = [new Transaction(new DateOnly(2025, 1, 10), "tj-mercadona finca espana", -23.40m, 100m, Bank.Ruralvia)],
+        };
+        var client = await ClientReadingWithAsync(reader);
+        var upload = await client.PostAsync("/api/statements", AnyFileUpload());
+        using var uploaded = JsonDocument.Parse(await upload.Content.ReadAsStringAsync());
+        return (client, reader, uploaded.RootElement.GetProperty("transactions")[0].GetProperty("id").GetInt32());
+    }
+
+    [Fact]
+    public async Task ListTransactions_AfterACorrection_ReturnsTheCorrectedCategoryAndTheEngineRule()
+    {
+        var (client, _, id) = await ClientWithOneTransactionAsync();
+        using var _client = client;
+        await client.PutAsJsonAsync($"/api/transactions/{id}/category", new { category = "Restaurants" });
+
+        var response = await client.GetAsync("/api/transactions");
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var stored = body.RootElement[0];
+        Assert.Equal("Restaurants", stored.GetProperty("category").GetString());
+        Assert.True(stored.GetProperty("corrected").GetBoolean());
+        Assert.Equal("*mercadona*", stored.GetProperty("rule").GetProperty("pattern").GetString());
+    }
+
+    [Fact]
+    public async Task CorrectCategory_ToUncategorized_IsAccepted()
+    {
+        var (client, _, id) = await ClientWithOneTransactionAsync();
+        using var _client = client;
+
+        var response = await client.PutAsJsonAsync($"/api/transactions/{id}/category", new { category = "Uncategorized" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("Uncategorized", body.RootElement.GetProperty("category").GetString());
+        Assert.True(body.RootElement.GetProperty("corrected").GetBoolean());
+    }
+
+    [Fact]
+    public async Task CorrectCategory_TransactionOfAnotherUser_ReturnsNotFoundAndKeepsItsCategory()
+    {
+        var (client, _, id) = await ClientWithOneTransactionAsync();
+        using var _client = client;
+        using var other = _factory.CreateClient();
+        await other.LogInAsync("luis@example.com");
+
+        var response = await other.PutAsJsonAsync($"/api/transactions/{id}/category", new { category = "Restaurants" });
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        var stored = await client.GetAsync("/api/transactions");
+        using var body = JsonDocument.Parse(await stored.Content.ReadAsStringAsync());
+        Assert.Equal("Groceries", body.RootElement[0].GetProperty("category").GetString());
+        Assert.False(body.RootElement[0].GetProperty("corrected").GetBoolean());
+    }
+
+    [Fact]
+    public async Task CorrectCategory_UnknownTransaction_ReturnsNotFound()
+    {
+        var response = await _client.PutAsJsonAsync("/api/transactions/999999/category", new { category = "Restaurants" });
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Upload_StatementWithACorrectedTransaction_SkipsItAndReturnsTheCorrectedCategory()
+    {
+        var (client, _, id) = await ClientWithOneTransactionAsync();
+        using var _client = client;
+        await client.PutAsJsonAsync($"/api/transactions/{id}/category", new { category = "Restaurants" });
+
+        var response = await client.PostAsync("/api/statements", AnyFileUpload());
+        var stored = await client.GetAsync("/api/transactions");
+
+        using var uploaded = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(1, uploaded.RootElement.GetProperty("skippedTransactions").GetInt32());
+        var returned = uploaded.RootElement.GetProperty("transactions")[0];
+        Assert.Equal(id, returned.GetProperty("id").GetInt32());
+        Assert.Equal("Restaurants", returned.GetProperty("category").GetString());
+        Assert.True(returned.GetProperty("corrected").GetBoolean());
+        using var list = JsonDocument.Parse(await stored.Content.ReadAsStringAsync());
+        Assert.Equal(1, list.RootElement.GetArrayLength());
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"category\": null}")]
+    [InlineData("{\"category\": 99}")]
+    [InlineData("{\"category\": \"NotACategory\"}")]
+    public async Task CorrectCategory_MissingOrUnknownCategory_ReturnsBadRequestAndKeepsTheCategory(string json)
+    {
+        var (client, _, id) = await ClientWithOneTransactionAsync();
+        using var _client = client;
+        using var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+        var response = await client.PutAsync($"/api/transactions/{id}/category", content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var stored = await client.GetAsync("/api/transactions");
+        using var body = JsonDocument.Parse(await stored.Content.ReadAsStringAsync());
+        Assert.Equal("Groceries", body.RootElement[0].GetProperty("category").GetString());
+        Assert.False(body.RootElement[0].GetProperty("corrected").GetBoolean());
     }
 }

@@ -71,7 +71,7 @@ public class EfTransactionRepositoryTests : IDisposable
                 new Transaction(new DateOnly(2025, 1, 11), "NOMINA EMPRESA EJEMPLO", 1500.00m, 2476.55m, Bank.Ruralvia),
                 new Transaction(new DateOnly(2025, 1, 10), "COMPRA SUPERMERCADO EJEMPLO", -23.45m, 1000.00m, Bank.Ruralvia),
             },
-            stored);
+            stored.Select(t => t with { Id = 0 }));
     }
 
     [Fact]

@@ -20,21 +20,35 @@ public class UploadStatement(
                 return t with { Category = categorization.Category, Rule = categorization.Rule };
             })
             .ToList();
-        var storedCopies = (await repository.ListAsync(email)).GroupBy(t => t).ToDictionary(g => g.Key, g => g.Count());
+        var storedCopies = (await repository.ListAsync(email))
+            .GroupBy(Key)
+            .ToDictionary(g => g.Key, g => new Queue<Transaction>(g));
 
         var newTransactions = new List<Transaction>();
+        var skipped = 0;
+        var returned = new List<Transaction?>();
         foreach (var transaction in transactions)
         {
-            if (storedCopies.GetValueOrDefault(transaction) > 0)
-                storedCopies[transaction]--;
+            if (storedCopies.TryGetValue(Key(transaction), out var copies) && copies.Count > 0)
+            {
+                returned.Add(copies.Dequeue());
+                skipped++;
+            }
             else
+            {
+                returned.Add(null);
                 newTransactions.Add(transaction);
+            }
         }
 
-        await repository.AddAsync(email, newTransactions);
+        var added = new Queue<Transaction>(await repository.AddAsync(email, newTransactions));
         return new UploadStatementResult(
-            transactions,
+            returned.Select(t => t ?? added.Dequeue()).ToList(),
             result.FailedRows,
-            transactions.Count - newTransactions.Count);
+            skipped);
     }
+
+    // What identifies a row of a statement: the category and the rule are not part of it, because the user can change them.
+    private static (DateOnly, string, decimal, decimal, Bank) Key(Transaction t) =>
+        (t.Date, t.Description, t.Amount, t.Balance, t.Bank);
 }

@@ -18,6 +18,7 @@ builder.Services.AddDbContext<LexBankDbContext>(options =>
 builder.Services.AddScoped<ITransactionRepository, EfTransactionRepository>();
 builder.Services.AddScoped<IRuleRepository, EfRuleRepository>();
 builder.Services.AddScoped<UploadStatement>();
+builder.Services.AddScoped<CorrectCategory>();
 builder.Services.AddScoped<IUserRepository, EfUserRepository>();
 builder.Services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
 builder.Services.AddScoped<SignUp>();
@@ -44,7 +45,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 });
 builder.Services.AddAuthorization();
 builder.Services.ConfigureHttpJsonOptions(options =>
-    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false)));
 
 var app = builder.Build();
 
@@ -78,6 +79,19 @@ app.MapPost("/api/statements", async (IFormFile file, ClaimsPrincipal user, Uplo
 
 app.MapGet("/api/transactions", async (ClaimsPrincipal user, ITransactionRepository repository) =>
     Results.Ok(await repository.ListAsync(user.FindFirstValue(ClaimTypes.Email)!))).RequireAuthorization();
+
+app.MapPut("/api/transactions/{id:int}/category", async (int id, CorrectCategoryRequest request, ClaimsPrincipal user, CorrectCategory correctCategory) =>
+{
+    if (request.Category is null) return Results.BadRequest();
+    try
+    {
+        return Results.Ok(await correctCategory.ExecuteAsync(user.FindFirstValue(ClaimTypes.Email)!, id, request.Category.Value));
+    }
+    catch (TransactionNotFoundException)
+    {
+        return Results.NotFound();
+    }
+}).RequireAuthorization();
 
 app.MapPost("/api/users", async (SignUpRequest request, SignUp signUp) =>
 {
@@ -128,6 +142,8 @@ app.MapDelete("/api/session", async (HttpContext context) =>
 app.Run();
 
 public record SignUpRequest(string? Email, string? Password);
+
+public record CorrectCategoryRequest(Category? Category);
 
 public record LogInRequest(string? Email, string? Password);
 

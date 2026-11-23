@@ -817,6 +817,9 @@ namespace LexBank.Infrastructure.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
+                    b.Property<bool>("Corrected")
+                        .HasColumnType("bit");
+
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date");
 
