@@ -14,6 +14,13 @@ function uploadFile(container: HTMLElement) {
   return input
 }
 
+// Text of each cell; a cell with a selector shows the label of the selected option.
+function cellTexts() {
+  return screen
+    .getAllByRole('cell')
+    .map((c) => c.querySelector('select')?.selectedOptions[0].textContent ?? c.textContent)
+}
+
 function stubApi(upload: () => Promise<Response>, stored: unknown[] = []) {
   vi.stubGlobal(
     'fetch',
@@ -490,7 +497,7 @@ it('leaves the rule cell empty for a transaction without rule', async () => {
   uploadFile(container)
 
   await screen.findByRole('table')
-  const cells = screen.getAllByRole('cell').map((c) => c.textContent)
+  const cells = cellTexts()
   expect(cells.slice(-2)).toEqual(['Sin categoría', ''])
 })
 
@@ -507,7 +514,7 @@ it('shows the stored transactions when the page loads', async () => {
   render(<App />)
 
   await screen.findByRole('table')
-  const cells = screen.getAllByRole('cell').map((c) => c.textContent)
+  const cells = cellTexts()
   expect(cells).toEqual(['2025-01-10', 'COMPRA', '-23.45', '1000', 'Ruralvía', 'Sin categoría', ''])
 })
 
@@ -537,7 +544,7 @@ it('does not replace an uploaded statement with a late response to the initial l
   resolveStored(Response.json([]))
   await new Promise((resolve) => setTimeout(resolve, 0))
 
-  expect(screen.getAllByRole('cell').map((c) => c.textContent)).toEqual([
+  expect(cellTexts()).toEqual([
     '2025-01-10',
     'COMPRA',
     '-23.45',
@@ -675,4 +682,157 @@ it('clears the skipped message when a later upload fails', async () => {
 
   await screen.findByRole('alert')
   expect(screen.queryByText(/Movimientos omitidos/)).toBeNull()
+})
+
+it('shows every category, "Sin categoría" included, in the selector of each transaction', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(
+      Response.json([
+        { id: 1, date: '2025-01-10', description: 'COMPRA', amount: -23.45, balance: 1000, bank: 'Ruralvia', category: 'Groceries', rule: null, corrected: false },
+      ]),
+    ),
+  )
+
+  render(<App />)
+
+  const selector = await screen.findByRole('combobox', { name: 'Categoría de COMPRA' })
+  expect((selector as HTMLSelectElement).value).toBe('Groceries')
+  expect(within(selector).getAllByRole('option').map((o) => o.textContent)).toEqual([
+    'Intereses',
+    'Nómina',
+    'Ahorro',
+    'Salida del ahorro',
+    'Movimientos internos',
+    'Supermercado',
+    'Restaurantes y cafeterías',
+    'Ropa',
+    'Calzado',
+    'Joyería',
+    'Hogar',
+    'Salud',
+    'Transporte y vehículo',
+    'Viajes',
+    'Mascotas',
+    'Efectivo',
+    'Transferencias y Bizum enviados',
+    'Transferencias y Bizum recibidos',
+    'Sin categoría',
+  ])
+})
+
+const groceriesRule = { pattern: '*mercadona*', category: 'Groceries', sign: 'Expense', priority: 6 }
+
+function storedTransaction(overrides: object = {}) {
+  return {
+    id: 7,
+    date: '2025-01-10',
+    description: 'COMPRA',
+    amount: -23.45,
+    balance: 1000,
+    bank: 'Ruralvia',
+    category: 'Groceries',
+    rule: groceriesRule,
+    corrected: false,
+    ...overrides,
+  }
+}
+
+function stubCorrection(correction: () => Promise<Response>, stored: unknown[] = [storedTransaction()]) {
+  const fetchMock = vi.fn((_url: string, init?: RequestInit) =>
+    init?.method === 'PUT' ? correction() : Promise.resolve(Response.json(stored)),
+  )
+  vi.stubGlobal('fetch', fetchMock)
+  return fetchMock
+}
+
+it('saves the chosen category and marks the row as corrected', async () => {
+  const fetchMock = stubCorrection(() =>
+    Promise.resolve(Response.json(storedTransaction({ category: 'Restaurants', corrected: true }))),
+  )
+  render(<App />)
+  const selector = await screen.findByRole('combobox', { name: 'Categoría de COMPRA' })
+
+  fireEvent.change(selector, { target: { value: 'Restaurants' } })
+
+  await screen.findByText('Corregida por ti')
+  expect((screen.getByRole('combobox', { name: 'Categoría de COMPRA' }) as HTMLSelectElement).value).toBe('Restaurants')
+  const [url, init] = fetchMock.mock.calls.find(([, init]) => init?.method === 'PUT')!
+  expect(url).toBe('/api/transactions/7/category')
+  expect(new Headers(init?.headers).get('Content-Type')).toBe('application/json')
+  expect(JSON.parse(init?.body as string)).toEqual({ category: 'Restaurants' })
+})
+
+it('shows "Corregida por ti" for a transaction already corrected', async () => {
+  stubCorrection(() => Promise.reject(new Error('no correction expected')), [
+    storedTransaction({ category: 'Restaurants', corrected: true }),
+    storedTransaction({ id: 8, description: 'OTRA', amount: -5 }),
+  ])
+
+  render(<App />)
+
+  await screen.findByRole('table')
+  const ruleCells = screen.getAllByRole('row').slice(1).map((row) => within(row).getAllByRole('cell').at(-1)!.textContent)
+  expect(ruleCells).toEqual(['Corregida por ti', 'Gasto cuya descripción contiene «mercadona»'])
+})
+
+it('restores the previous category and shows a message when saving fails', async () => {
+  stubCorrection(() => Promise.resolve(new Response(null, { status: 500 })))
+  render(<App />)
+  const selector = await screen.findByRole('combobox', { name: 'Categoría de COMPRA' })
+
+  fireEvent.change(selector, { target: { value: 'Restaurants' } })
+
+  expect((await screen.findByRole('alert')).textContent).toBe('No se pudo guardar la categoría')
+  expect((screen.getByRole('combobox', { name: 'Categoría de COMPRA' }) as HTMLSelectElement).value).toBe('Groceries')
+  expect(screen.queryByText('Corregida por ti')).toBeNull()
+})
+
+it('restores the previous category and shows a message when the server is unreachable while saving', async () => {
+  stubCorrection(() => Promise.reject(new TypeError('Failed to fetch')))
+  render(<App />)
+  const selector = await screen.findByRole('combobox', { name: 'Categoría de COMPRA' })
+
+  fireEvent.change(selector, { target: { value: 'Restaurants' } })
+
+  expect((await screen.findByRole('alert')).textContent).toBe('No se pudo guardar la categoría')
+  expect((screen.getByRole('combobox', { name: 'Categoría de COMPRA' }) as HTMLSelectElement).value).toBe('Groceries')
+})
+
+async function failACorrection(container: HTMLElement, others: (url: string, init?: RequestInit) => Promise<Response>) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string, init?: RequestInit) =>
+      init?.method === 'PUT'
+        ? Promise.resolve(new Response(null, { status: 500 }))
+        : init?.method
+          ? others(url, init)
+          : Promise.resolve(Response.json([storedTransaction()])),
+    ),
+  )
+  render(<App />, { container })
+  fireEvent.change(await screen.findByRole('combobox', { name: 'Categoría de COMPRA' }), { target: { value: 'Restaurants' } })
+  await screen.findByRole('alert')
+}
+
+it('hides the saving error after a successful upload', async () => {
+  const container = document.body.appendChild(document.createElement('div'))
+  await failACorrection(container, () =>
+    Promise.resolve(Response.json({ transactions: [storedTransaction({ id: 9, description: 'NUEVA' })], failedRows: [] })),
+  )
+
+  uploadFile(container)
+
+  await screen.findByRole('combobox', { name: 'Categoría de NUEVA' })
+  expect(screen.queryByRole('alert')).toBeNull()
+})
+
+it('hides the saving error after logging out', async () => {
+  const container = document.body.appendChild(document.createElement('div'))
+  await failACorrection(container, () => Promise.resolve(new Response(null, { status: 204 })))
+
+  fireEvent.click(screen.getByRole('button', { name: 'Cerrar sesión' }))
+
+  await screen.findByRole('form', { name: 'Iniciar sesión' })
+  expect(screen.queryByRole('alert')).toBeNull()
 })
