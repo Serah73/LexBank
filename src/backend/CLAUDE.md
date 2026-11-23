@@ -17,7 +17,7 @@ Run from the repository root.
 ## Where things go
 
 - **Domain:** records and enums with no dependencies (`Transaction`, `Category`, `Rule`, `Categorization`, `Categorizer`, `FailedRow`, `FailedRowReason`).
-- **Application:** one class per use case, named with a verb (`UploadStatement`, method `ExecuteAsync`), plus the interfaces the use cases need (`IStatementReader`, `ITransactionRepository`, `IRuleRepository`).
+- **Application:** one class per use case, named with a verb (`UploadStatement`, `CorrectCategory`, method `ExecuteAsync`), plus the interfaces the use cases need (`IStatementReader`, `ITransactionRepository`, `IRuleRepository`).
   `UploadStatement` uses the first `IStatementReader` whose `CanRead(fileName)` is true: a new format is a new reader registered in `Program.cs`.
   `UploadStatement` returns `UploadStatementResult` (including `SkippedTransactions`), not the reader's result: the reader knows nothing about duplicates.
 - **Infrastructure:** implementations of those interfaces. Readers locate columns by header name, never by position; a new reader must do the same and reject files where a header is missing. The initial categorization rules are in `InitialRules`, seeded through the migration. Third-party libraries (ClosedXML, EF Core, `Microsoft.Extensions.Identity.Core` for password hashing in `IdentityPasswordHasher`) are used only here.
@@ -28,14 +28,17 @@ Run from the repository root.
 
 - **Codes, not text:** responses carry stable codes (enum names serialized as strings, error codes such as `UnsupportedStatement`). Never return user-facing messages; the frontend translates them in `src/frontend/src/messages.ts`. A new code needs its translation there.
 - **Rules:** priority 1 is the highest. A pattern matches whole words; a `*` at either end relaxes that side. A lone `*` matches everything and is not guarded. A seeded rule's id is its priority times 100 plus its position in the category's list, so append new patterns at the end of the list. Changing `InitialRules` means regenerating `InitialCreate` and running `./reset-db.sh`.
-- **Duplicates and category:** `UploadStatement` categorizes the file's transactions before comparing them with the stored ones, because `Transaction` equality includes `Category` and `Rule`. If rules can change after import, compare ignoring the category.
+- **Duplicates:** `UploadStatement` compares by an explicit key (date, description, amount, balance, bank), never by record equality: the record also holds `Id`, `Category`, `Rule` and `Corrected`, which change after import. A skipped row is returned as stored, with the user's correction.
+- **Corrections:** `Transaction.Category` is the category shown (the user's one when `Corrected`); the engine's decision stays in `Rule` (`Uncategorized` when there was none). `Correct` with the current category returns the transaction unchanged. The engine never overwrites a correction.
+- **Not found:** a use case signals a missing resource with an exception (`TransactionNotFoundException`), never `null`; the endpoint maps it to `404`. A transaction of another user is "not found".
+- **Enums in JSON:** the converter rejects numbers, so an undefined value cannot be stored. A request field of enum type must be nullable, otherwise a missing field becomes the first enum value.
 - **Rule of a transaction:** `Transaction.Rule` is an `init` property outside the constructor, because EF cannot bind navigations through it. `EfTransactionRepository.AddAsync` replaces it with the stored rule (found by value), otherwise EF inserts a copy; `ListAsync` must `Include` it.
-- **Persistence:** `Transaction` has no id property; `Id` is an EF Core shadow property. Do not add persistence concerns to Domain types.
-- **Data per user:** `ITransactionRepository` always receives the user's email; `Transaction.UserId` is a shadow property like `Id`. A new endpoint that reads or writes transactions must be protected and must pass the email of the session.
+- **Persistence:** `Transaction.Id` is an `init` property outside the constructor and the EF key. Do not add other persistence concerns to Domain types.
+- **Data per user:** `ITransactionRepository` always receives the user's email; `Transaction.UserId` is an EF Core shadow property. A new endpoint that reads or writes transactions must be protected and must pass the email of the session.
 - **Passwords:** never store or log one in clear. `User` overrides `PrintMembers` so its `ToString()` hides the hash; keep it when changing the record.
 - **Users table:** `Users.Email` has a unique index; a model change that breaks the development database is fixed by dropping and recreating it.
 - **Listing order:** transactions are listed by `Date DESC, Id ASC`.
-- **Migrations:** the API applies pending migrations on startup. While the database is for development only, keep a single `InitialCreate`: delete `Migrations/*`, run `dotnet ef migrations add InitialCreate` and drop the database. Once real data must be kept, switch to one migration per model change and never edit an applied one.
+- **Migrations:** the API applies pending migrations on startup. While the database is for development only, keep a single `InitialCreate`: run `./reset-migrations.sh`, then `dotnet ef migrations add InitialCreate`, then `./reset-db.sh`. Once real data must be kept, switch to one migration per model change and never edit an applied one.
 - **`Microsoft.EntityFrameworkCore.Design` in `LexBank.Api`:** required by `dotnet-ef` in the startup project (`PrivateAssets=all`). It is not a dependency-rule violation; do not remove it.
 
 ## Tests

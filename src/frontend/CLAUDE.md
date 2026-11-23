@@ -22,7 +22,7 @@ Run from `src/frontend`.
 ## Conventions
 
 - **API codes:** the API returns stable codes, never text. Map every code to its message in `src/messages.ts`; never render a raw code. An unknown error code falls back to `ProcessingFailed`.
-- **Form errors:** show each error under its own field (`aria-invalid` + `aria-describedby`), not as a loose notice; `role="alert"` is only for the generic error. `SignUpFailed` and `LogInFailed` exist only in the frontend (network failure or unreadable response), not in the API. The log-in error is a general `role="alert"`, not tied to a field, so it does not reveal which of the two was wrong.
+- **Form errors:** show each error under its own field (`aria-invalid` + `aria-describedby`), not as a loose notice; `role="alert"` is only for the generic error. `SignUpFailed`, `LogInFailed` and `CorrectionFailed` exist only in the frontend (network failure or unreadable response), not in the API. `CorrectionFailed` is a general `role="alert"`: the row goes back to its previous category. The log-in error is a general `role="alert"`, not tied to a field, so it does not reveal which of the two was wrong.
 - **Session:** the screen assumes a session until `GET /api/transactions` answers `401`; only an explicit `401` shows the forms. A test that needs the signed-out view stubs that request with `401`; the two forms share labels, so query them inside `within(screen.getByRole('form', { name: ... }))`.
 - **API responses are untrusted:** check the shape of a response before using it (see `handleFileChange` in `App.tsx`).
 - **Language:** user-facing text is in Spanish (the default UI language) and hard-coded for now; English arrives with the multi-language story. Code, comments and test names stay in English.

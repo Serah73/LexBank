@@ -9,8 +9,7 @@ public class LexBankDbContext(DbContextOptions<LexBankDbContext> options) : DbCo
     {
         modelBuilder.Entity<Transaction>(transaction =>
         {
-            transaction.Property<int>("Id");
-            transaction.HasKey("Id");
+            transaction.HasKey(t => t.Id);
             transaction.Property(t => t.Amount).HasPrecision(18, 2);
             transaction.Property(t => t.Balance).HasPrecision(18, 2);
             transaction.Property(t => t.Bank).HasConversion<string>().HasMaxLength(20);

@@ -56,6 +56,7 @@ namespace LexBank.Infrastructure.Migrations
                     Bank = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     Category = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
                     RuleId = table.Column<int>(type: "int", nullable: true),
+                    Corrected = table.Column<bool>(type: "bit", nullable: false),
                     UserId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>

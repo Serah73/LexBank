@@ -36,6 +36,8 @@ export type StatementError = 'UnsupportedStatement' | 'ProcessingFailed'
 
 export type SignUpError = 'EmailAlreadyRegistered' | 'InvalidEmail' | 'InvalidPassword' | 'SignUpFailed'
 
+export type CorrectionError = 'CorrectionFailed'
+
 export type LogInError = 'InvalidCredentials' | 'LogInFailed'
 
 export const logInErrorMessages: Record<LogInError, string> = {
@@ -108,4 +110,8 @@ export const signUpErrorMessages: Record<SignUpError, string> = {
 export const statementErrorMessages: Record<StatementError, string> = {
   UnsupportedStatement: 'El formato del fichero no es compatible',
   ProcessingFailed: 'No se pudo procesar el fichero',
+}
+
+export const correctionErrorMessages: Record<CorrectionError, string> = {
+  CorrectionFailed: 'No se pudo guardar la categoría',
 }

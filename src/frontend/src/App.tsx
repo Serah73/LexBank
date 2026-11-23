@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import LogInForm from './LogInForm'
-import { bankNames, categoryNames, describeRule, failedRowMessages, statementErrorMessages } from './messages'
-import type { Bank, Category, FailedRowReason, Rule, StatementError } from './messages'
+import { bankNames, categoryNames, correctionErrorMessages, describeRule, failedRowMessages, statementErrorMessages } from './messages'
+import type { Bank, Category, CorrectionError, FailedRowReason, Rule, StatementError } from './messages'
 import SignUpForm from './SignUpForm'
 
 interface Transaction {
+  id: number
   date: string
   description: string
   amount: number
@@ -13,6 +14,7 @@ interface Transaction {
   bank: Bank
   category: Category
   rule: Rule | null
+  corrected: boolean
 }
 
 interface FailedRow {
@@ -32,6 +34,7 @@ function App() {
   const [error, setError] = useState<StatementError | null>(null)
   const [skipped, setSkipped] = useState(0)
   const [signedOut, setSignedOut] = useState(false)
+  const [correctionError, setCorrectionError] = useState<CorrectionError | null>(null)
 
   const uploaded = useRef(false)
 
@@ -65,6 +68,7 @@ function App() {
     const file = event.target.files?.[0]
     if (!file) return
     event.target.value = ''
+    setCorrectionError(null)
 
     const body = new FormData()
     body.append('file', file)
@@ -89,6 +93,22 @@ function App() {
     }
   }
 
+  async function handleCategoryChange(id: number, category: Category) {
+    setCorrectionError(null)
+    try {
+      const response = await fetch(`/api/transactions/${id}/category`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category }),
+      })
+      const updated: Transaction = await response.json()
+      if (!response.ok || updated?.id !== id) throw new Error('The correction was not saved')
+      setTransactions((current) => current.map((t) => (t.id === id ? updated : t)))
+    } catch {
+      setCorrectionError('CorrectionFailed')
+    }
+  }
+
   async function handleLogOut() {
     await fetch('/api/session', { method: 'DELETE' })
     uploaded.current = false
@@ -96,6 +116,7 @@ function App() {
     setFailedRows([])
     setSkipped(0)
     setError(null)
+    setCorrectionError(null)
     setSignedOut(true)
   }
 
@@ -117,6 +138,7 @@ function App() {
         </>
       )}
       {error && <p role="alert">{statementErrorMessages[error]}</p>}
+      {correctionError && <p role="alert">{correctionErrorMessages[correctionError]}</p>}
       {skipped > 0 && <p>Movimientos omitidos por estar ya importados: {skipped}</p>}
       {transactions.length > 0 && (
         <table>
@@ -139,8 +161,18 @@ function App() {
                 <td>{t.amount}</td>
                 <td>{t.balance}</td>
                 <td>{bankNames[t.bank]}</td>
-                <td>{categoryNames[t.category]}</td>
-                <td>{t.rule && describeRule(t.rule)}</td>
+                <td>
+                  <select aria-label={`Categoría de ${t.description}`} value={t.category}
+                    onChange={(event) => handleCategoryChange(t.id, event.target.value as Category)}
+                  >
+                    {(Object.keys(categoryNames) as Category[]).map((category) => (
+                      <option key={category} value={category}>
+                        {categoryNames[category]}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td>{t.corrected ? 'Corregida por ti' : t.rule && describeRule(t.rule)}</td>
               </tr>
             ))}
           </tbody>

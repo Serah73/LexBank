@@ -139,7 +139,8 @@ The project is under active development.
 | PDF import | Planned |
 | Automatic categorization of transactions on import, with a seeded set of rules | Implemented |
 | Display of the rule that assigned each category | Implemented |
-| Corrections and rule management | Planned |
+| Correction of the category of a transaction | Implemented |
+| Rule management | Planned |
 | Accuracy measurement and spending charts | Planned |
 | Spanish and English user interface | Planned (Spanish only for now) |
 | Visual design with light and dark themes | Planned |

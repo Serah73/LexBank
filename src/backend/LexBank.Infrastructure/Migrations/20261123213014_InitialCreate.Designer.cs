@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LexBank.Infrastructure.Migrations
 {
     [DbContext(typeof(LexBankDbContext))]
-    [Migration("20261119194205_InitialCreate")]
+    [Migration("20261123213014_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -819,6 +819,9 @@ namespace LexBank.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
+
+                    b.Property<bool>("Corrected")
+                        .HasColumnType("bit");
 
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date");
