@@ -999,3 +999,85 @@ it('closes the rule offer when a statement is uploaded', async () => {
 
   await waitFor(() => expect(screen.queryByRole('form', { name: 'Crear regla' })).toBeNull())
 })
+
+const existingRule = { id: 7, pattern: 'TJ-MERCADONA FINCA', category: 'Groceries', sign: 'Expense', priority: 2006 }
+
+function stubReplacement(
+  existing: unknown,
+  replaceRule: () => Promise<Response> = () => Promise.resolve(Response.json({ ...existingRule, category: 'Restaurants' })),
+) {
+  const stored = [storedTransaction({ description: 'TJ-MERCADONA FINCA' })]
+  const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+    if (url === '/api/rules/7/category' && init?.method === 'PUT') return replaceRule()
+    if (init?.method === 'PUT') return Promise.resolve(Response.json({ ...stored[0], category: 'Restaurants', corrected: true }))
+    if (url === '/api/rules' && init?.method === 'POST')
+      return Promise.resolve(Response.json({ error: 'RuleAlreadyExists', rule: existing }, { status: 409 }))
+    return Promise.resolve(Response.json(stored))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  return fetchMock
+}
+
+async function submitRuleThatAlreadyExists(existing: unknown, replaceRule?: () => Promise<Response>) {
+  const fetchMock = stubReplacement(existing, replaceRule)
+  render(<App />)
+  await correctTo('Restaurants')
+  fireEvent.click(within(await ruleForm()).getByRole('button', { name: 'Crear regla' }))
+  return { fetchMock, form: within(screen.getByRole('form', { name: 'Crear regla' })) }
+}
+
+it('asks to replace the category showing the current one when the rule already exists with another category', async () => {
+  const { form } = await submitRuleThatAlreadyExists(existingRule)
+
+  await form.findByText(/categorizada como «Supermercado».*¿Reemplazar su categoría por «Restaurantes y cafeterías»\?/)
+  expect(form.getByRole('button', { name: 'Reemplazar' })).toBeTruthy()
+  expect(form.getByRole('button', { name: 'No reemplazar' })).toBeTruthy()
+  expect(form.queryByText('Ya existe una regla con ese patrón y ese signo')).toBeNull()
+})
+
+it('changes the category of the existing rule and closes the offer when confirming', async () => {
+  const { fetchMock, form } = await submitRuleThatAlreadyExists(existingRule)
+
+  fireEvent.click(await form.findByRole('button', { name: 'Reemplazar' }))
+
+  await waitFor(() => expect(screen.queryByRole('form', { name: 'Crear regla' })).toBeNull())
+  const [, init] = fetchMock.mock.calls.find(([url]) => url === '/api/rules/7/category')!
+  expect(init?.method).toBe('PUT')
+  expect(new Headers(init?.headers).get('Content-Type')).toBe('application/json')
+  expect(JSON.parse(init?.body as string)).toEqual({ category: 'Restaurants' })
+})
+
+it('goes back to the form without changing anything when declining the replacement', async () => {
+  const { fetchMock, form } = await submitRuleThatAlreadyExists(existingRule)
+
+  fireEvent.click(await form.findByRole('button', { name: 'No reemplazar' }))
+
+  expect(form.getByRole('textbox', { name: 'Patrón' })).toBeTruthy()
+  expect(form.getByRole('button', { name: 'Crear regla' })).toBeTruthy()
+  expect(form.queryByRole('button', { name: 'Reemplazar' })).toBeNull()
+  expect(fetchMock.mock.calls.some(([url]) => url === '/api/rules/7/category')).toBe(false)
+})
+
+it('still says the rule already exists when it has the offered category', async () => {
+  const { fetchMock, form } = await submitRuleThatAlreadyExists({ ...existingRule, category: 'Restaurants' })
+
+  const field = form.getByRole('textbox', { name: 'Patrón' })
+  await waitFor(() => expect(field.getAttribute('aria-invalid')).toBe('true'))
+  expect(document.getElementById(field.getAttribute('aria-describedby')!)!.textContent).toBe(
+    'Ya existe una regla con ese patrón y ese signo',
+  )
+  expect(form.queryByRole('button', { name: 'Reemplazar' })).toBeNull()
+  expect(fetchMock.mock.calls.some(([url]) => url === '/api/rules/7/category')).toBe(false)
+})
+
+it.each([
+  ['the server answers an error', () => Promise.resolve(new Response(null, { status: 500 }))],
+  ['the server is unreachable', () => Promise.reject(new TypeError('Failed to fetch'))],
+])('shows a general error and keeps the question open when %s', async (_case, replaceRule) => {
+  const { form } = await submitRuleThatAlreadyExists(existingRule, replaceRule)
+
+  fireEvent.click(await form.findByRole('button', { name: 'Reemplazar' }))
+
+  expect((await screen.findByRole('alert')).textContent).toBe('No se pudo cambiar la categoría de la regla')
+  expect(form.getByRole('button', { name: 'Reemplazar' })).toBeTruthy()
+})
