@@ -19,6 +19,7 @@ builder.Services.AddScoped<ITransactionRepository, EfTransactionRepository>();
 builder.Services.AddScoped<IRuleRepository, EfRuleRepository>();
 builder.Services.AddScoped<UploadStatement>();
 builder.Services.AddScoped<CorrectCategory>();
+builder.Services.AddScoped<CreateRule>();
 builder.Services.AddScoped<IUserRepository, EfUserRepository>();
 builder.Services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
 builder.Services.AddScoped<SignUp>();
@@ -93,6 +94,23 @@ app.MapPut("/api/transactions/{id:int}/category", async (int id, CorrectCategory
     }
 }).RequireAuthorization();
 
+app.MapPost("/api/rules", async (CreateRuleRequest request, CreateRule createRule) =>
+{
+    if (request.Category is null || request.Sign is null) return Results.BadRequest();
+    try
+    {
+        return Results.Created((string?)null, await createRule.ExecuteAsync(request.Pattern ?? string.Empty, request.Category.Value, request.Sign.Value));
+    }
+    catch (InvalidRulePatternException)
+    {
+        return Results.BadRequest(new { error = "InvalidRulePattern" });
+    }
+    catch (RuleAlreadyExistsException)
+    {
+        return Results.Conflict(new { error = "RuleAlreadyExists" });
+    }
+}).RequireAuthorization();
+
 app.MapPost("/api/users", async (SignUpRequest request, SignUp signUp) =>
 {
     try
@@ -144,6 +162,8 @@ app.Run();
 public record SignUpRequest(string? Email, string? Password);
 
 public record CorrectCategoryRequest(Category? Category);
+
+public record CreateRuleRequest(string? Pattern, Category? Category, AmountSign? Sign);
 
 public record LogInRequest(string? Email, string? Password);
 

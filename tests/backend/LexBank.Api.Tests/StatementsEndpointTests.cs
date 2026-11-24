@@ -46,7 +46,7 @@ public class StatementsEndpointTests : IAsyncLifetime
     private static MultipartFormDataContent AnyFileUpload() =>
         new() { { new ByteArrayContent("any content"u8.ToArray()), "file", "statement.xlsx" } };
 
-    private async Task<HttpClient> ClientReadingWithAsync(IStatementReader reader)
+    private async Task<HttpClient> ClientReadingWithAsync(IStatementReader reader, string email = "ana@example.com")
     {
         var client = _factory.WithWebHostBuilder(builder =>
             builder.ConfigureServices(services =>
@@ -54,7 +54,7 @@ public class StatementsEndpointTests : IAsyncLifetime
                 services.RemoveAll<IStatementReader>();
                 services.AddSingleton(reader);
             })).CreateClient();
-        await client.LogInAsync();
+        await client.LogInAsync(email);
         return client;
     }
 
@@ -685,5 +685,53 @@ public class StatementsEndpointTests : IAsyncLifetime
         using var body = JsonDocument.Parse(await stored.Content.ReadAsStringAsync());
         Assert.Equal("Groceries", body.RootElement[0].GetProperty("category").GetString());
         Assert.False(body.RootElement[0].GetProperty("corrected").GetBoolean());
+    }
+
+    private static StubStatementReader ReaderWithOneTransaction(string description) => new()
+    {
+        Transactions = [new Transaction(new DateOnly(2025, 1, 10), description, -23.40m, 100m, Bank.Ruralvia)],
+    };
+
+    [Fact]
+    public async Task Upload_AfterCreatingARule_CategorizesAMatchingTransactionWithItEvenIfASeededRuleMatches()
+    {
+        using var client = await ClientReadingWithAsync(ReaderWithOneTransaction("tj-mercadona finca espana"));
+        await client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Restaurants", sign = "Expense" });
+
+        var response = await client.PostAsync("/api/statements", AnyFileUpload());
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var first = body.RootElement.GetProperty("transactions")[0];
+        Assert.Equal("Restaurants", first.GetProperty("category").GetString());
+        Assert.Equal("finca", first.GetProperty("rule").GetProperty("pattern").GetString());
+    }
+
+    [Fact]
+    public async Task Upload_RuleCreatedByAnotherUser_AppliesToMyImports()
+    {
+        using var other = _factory.CreateClient();
+        await other.LogInAsync("luis@example.com");
+        await other.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Restaurants", sign = "Expense" });
+        using var client = await ClientReadingWithAsync(ReaderWithOneTransaction("tj-mercadona finca espana"));
+
+        var response = await client.PostAsync("/api/statements", AnyFileUpload());
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("Restaurants", body.RootElement.GetProperty("transactions")[0].GetProperty("category").GetString());
+    }
+
+    [Fact]
+    public async Task Upload_SeveralUserRulesMatch_TheNewestWins()
+    {
+        using var client = await ClientReadingWithAsync(ReaderWithOneTransaction("tj-mercadona finca espana"));
+        await client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Restaurants", sign = "Expense" });
+        await client.PostAsJsonAsync("/api/rules", new { pattern = "espana", category = "Health", sign = "Expense" });
+
+        var response = await client.PostAsync("/api/statements", AnyFileUpload());
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var first = body.RootElement.GetProperty("transactions")[0];
+        Assert.Equal("Health", first.GetProperty("category").GetString());
+        Assert.Equal(1998, first.GetProperty("rule").GetProperty("priority").GetInt32());
     }
 }

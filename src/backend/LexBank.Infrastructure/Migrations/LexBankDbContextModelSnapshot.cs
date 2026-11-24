@@ -58,7 +58,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 101,
                             Category = "Interest",
                             Pattern = "interés",
-                            Priority = 1,
+                            Priority = 2001,
                             Sign = "Income"
                         },
                         new
@@ -66,7 +66,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 102,
                             Category = "Interest",
                             Pattern = "intereses",
-                            Priority = 1,
+                            Priority = 2001,
                             Sign = "Income"
                         },
                         new
@@ -74,7 +74,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 201,
                             Category = "Salary",
                             Pattern = "nómina",
-                            Priority = 2,
+                            Priority = 2002,
                             Sign = "Income"
                         },
                         new
@@ -82,7 +82,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 202,
                             Category = "Salary",
                             Pattern = "salario",
-                            Priority = 2,
+                            Priority = 2002,
                             Sign = "Income"
                         },
                         new
@@ -90,7 +90,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 301,
                             Category = "Savings",
                             Pattern = "cuenta remunerada",
-                            Priority = 3,
+                            Priority = 2003,
                             Sign = "Expense"
                         },
                         new
@@ -98,7 +98,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 401,
                             Category = "SavingsWithdrawal",
                             Pattern = "cuenta remunerada",
-                            Priority = 4,
+                            Priority = 2004,
                             Sign = "Income"
                         },
                         new
@@ -106,7 +106,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 501,
                             Category = "Internal",
                             Pattern = "traspaso",
-                            Priority = 5,
+                            Priority = 2005,
                             Sign = "Any"
                         },
                         new
@@ -114,7 +114,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 601,
                             Category = "Groceries",
                             Pattern = "supermercado*",
-                            Priority = 6,
+                            Priority = 2006,
                             Sign = "Expense"
                         },
                         new
@@ -122,7 +122,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 602,
                             Category = "Groceries",
                             Pattern = "hiper*",
-                            Priority = 6,
+                            Priority = 2006,
                             Sign = "Expense"
                         },
                         new
@@ -130,7 +130,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 603,
                             Category = "Groceries",
                             Pattern = "minimarket",
-                            Priority = 6,
+                            Priority = 2006,
                             Sign = "Expense"
                         },
                         new
@@ -138,7 +138,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 604,
                             Category = "Groceries",
                             Pattern = "mercado",
-                            Priority = 6,
+                            Priority = 2006,
                             Sign = "Expense"
                         },
                         new
@@ -146,7 +146,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 605,
                             Category = "Groceries",
                             Pattern = "frutería",
-                            Priority = 6,
+                            Priority = 2006,
                             Sign = "Expense"
                         },
                         new
@@ -154,7 +154,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 606,
                             Category = "Groceries",
                             Pattern = "carnicería",
-                            Priority = 6,
+                            Priority = 2006,
                             Sign = "Expense"
                         },
                         new
@@ -162,7 +162,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 607,
                             Category = "Groceries",
                             Pattern = "pescadería",
-                            Priority = 6,
+                            Priority = 2006,
                             Sign = "Expense"
                         },
                         new
@@ -170,7 +170,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 608,
                             Category = "Groceries",
                             Pattern = "panadería",
-                            Priority = 6,
+                            Priority = 2006,
                             Sign = "Expense"
                         },
                         new
@@ -178,7 +178,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 609,
                             Category = "Groceries",
                             Pattern = "horno",
-                            Priority = 6,
+                            Priority = 2006,
                             Sign = "Expense"
                         },
                         new
@@ -186,7 +186,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 610,
                             Category = "Groceries",
                             Pattern = "*alcampo*",
-                            Priority = 6,
+                            Priority = 2006,
                             Sign = "Expense"
                         },
                         new
@@ -194,7 +194,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 611,
                             Category = "Groceries",
                             Pattern = "*hiperdino*",
-                            Priority = 6,
+                            Priority = 2006,
                             Sign = "Expense"
                         },
                         new
@@ -202,7 +202,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 612,
                             Category = "Groceries",
                             Pattern = "*carrefour*",
-                            Priority = 6,
+                            Priority = 2006,
                             Sign = "Expense"
                         },
                         new
@@ -210,7 +210,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 613,
                             Category = "Groceries",
                             Pattern = "lidl",
-                            Priority = 6,
+                            Priority = 2006,
                             Sign = "Expense"
                         },
                         new
@@ -218,7 +218,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 614,
                             Category = "Groceries",
                             Pattern = "dia",
-                            Priority = 6,
+                            Priority = 2006,
                             Sign = "Expense"
                         },
                         new
@@ -226,7 +226,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 615,
                             Category = "Groceries",
                             Pattern = "*mercadona*",
-                            Priority = 6,
+                            Priority = 2006,
                             Sign = "Expense"
                         },
                         new
@@ -234,7 +234,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 616,
                             Category = "Groceries",
                             Pattern = "5 oceanos",
-                            Priority = 6,
+                            Priority = 2006,
                             Sign = "Expense"
                         },
                         new
@@ -242,7 +242,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 701,
                             Category = "Restaurants",
                             Pattern = "restaurante*",
-                            Priority = 7,
+                            Priority = 2007,
                             Sign = "Expense"
                         },
                         new
@@ -250,7 +250,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 702,
                             Category = "Restaurants",
                             Pattern = "cafetería*",
-                            Priority = 7,
+                            Priority = 2007,
                             Sign = "Expense"
                         },
                         new
@@ -258,7 +258,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 703,
                             Category = "Restaurants",
                             Pattern = "bar",
-                            Priority = 7,
+                            Priority = 2007,
                             Sign = "Expense"
                         },
                         new
@@ -266,7 +266,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 704,
                             Category = "Restaurants",
                             Pattern = "pizzería",
-                            Priority = 7,
+                            Priority = 2007,
                             Sign = "Expense"
                         },
                         new
@@ -274,7 +274,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 705,
                             Category = "Restaurants",
                             Pattern = "burger",
-                            Priority = 7,
+                            Priority = 2007,
                             Sign = "Expense"
                         },
                         new
@@ -282,7 +282,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 706,
                             Category = "Restaurants",
                             Pattern = "comida",
-                            Priority = 7,
+                            Priority = 2007,
                             Sign = "Expense"
                         },
                         new
@@ -290,7 +290,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 707,
                             Category = "Restaurants",
                             Pattern = "cena",
-                            Priority = 7,
+                            Priority = 2007,
                             Sign = "Expense"
                         },
                         new
@@ -298,7 +298,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 708,
                             Category = "Restaurants",
                             Pattern = "desayuno",
-                            Priority = 7,
+                            Priority = 2007,
                             Sign = "Expense"
                         },
                         new
@@ -306,7 +306,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 709,
                             Category = "Restaurants",
                             Pattern = "bocata",
-                            Priority = 7,
+                            Priority = 2007,
                             Sign = "Expense"
                         },
                         new
@@ -314,7 +314,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 710,
                             Category = "Restaurants",
                             Pattern = "*mcdonald*",
-                            Priority = 7,
+                            Priority = 2007,
                             Sign = "Expense"
                         },
                         new
@@ -322,7 +322,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 711,
                             Category = "Restaurants",
                             Pattern = "mc donalds",
-                            Priority = 7,
+                            Priority = 2007,
                             Sign = "Expense"
                         },
                         new
@@ -330,7 +330,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 712,
                             Category = "Restaurants",
                             Pattern = "burger king",
-                            Priority = 7,
+                            Priority = 2007,
                             Sign = "Expense"
                         },
                         new
@@ -338,7 +338,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 801,
                             Category = "Clothing",
                             Pattern = "moda",
-                            Priority = 8,
+                            Priority = 2008,
                             Sign = "Expense"
                         },
                         new
@@ -346,7 +346,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 802,
                             Category = "Clothing",
                             Pattern = "textil",
-                            Priority = 8,
+                            Priority = 2008,
                             Sign = "Expense"
                         },
                         new
@@ -354,7 +354,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 803,
                             Category = "Clothing",
                             Pattern = "boutique",
-                            Priority = 8,
+                            Priority = 2008,
                             Sign = "Expense"
                         },
                         new
@@ -362,7 +362,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 804,
                             Category = "Clothing",
                             Pattern = "zara",
-                            Priority = 8,
+                            Priority = 2008,
                             Sign = "Expense"
                         },
                         new
@@ -370,7 +370,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 805,
                             Category = "Clothing",
                             Pattern = "*springfield*",
-                            Priority = 8,
+                            Priority = 2008,
                             Sign = "Expense"
                         },
                         new
@@ -378,7 +378,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 806,
                             Category = "Clothing",
                             Pattern = "*primark*",
-                            Priority = 8,
+                            Priority = 2008,
                             Sign = "Expense"
                         },
                         new
@@ -386,7 +386,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 807,
                             Category = "Clothing",
                             Pattern = "*bershka*",
-                            Priority = 8,
+                            Priority = 2008,
                             Sign = "Expense"
                         },
                         new
@@ -394,7 +394,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 901,
                             Category = "Footwear",
                             Pattern = "zapatería",
-                            Priority = 9,
+                            Priority = 2009,
                             Sign = "Expense"
                         },
                         new
@@ -402,7 +402,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 902,
                             Category = "Footwear",
                             Pattern = "calzado",
-                            Priority = 9,
+                            Priority = 2009,
                             Sign = "Expense"
                         },
                         new
@@ -410,7 +410,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1001,
                             Category = "Jewelry",
                             Pattern = "joyería",
-                            Priority = 10,
+                            Priority = 2010,
                             Sign = "Expense"
                         },
                         new
@@ -418,7 +418,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1002,
                             Category = "Jewelry",
                             Pattern = "relojería",
-                            Priority = 10,
+                            Priority = 2010,
                             Sign = "Expense"
                         },
                         new
@@ -426,7 +426,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1003,
                             Category = "Jewelry",
                             Pattern = "*pandora*",
-                            Priority = 10,
+                            Priority = 2010,
                             Sign = "Expense"
                         },
                         new
@@ -434,7 +434,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1101,
                             Category = "Home",
                             Pattern = "ferretería",
-                            Priority = 11,
+                            Priority = 2011,
                             Sign = "Expense"
                         },
                         new
@@ -442,7 +442,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1102,
                             Category = "Home",
                             Pattern = "bricolaje",
-                            Priority = 11,
+                            Priority = 2011,
                             Sign = "Expense"
                         },
                         new
@@ -450,7 +450,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1103,
                             Category = "Home",
                             Pattern = "muebles",
-                            Priority = 11,
+                            Priority = 2011,
                             Sign = "Expense"
                         },
                         new
@@ -458,7 +458,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1104,
                             Category = "Home",
                             Pattern = "ikea",
-                            Priority = 11,
+                            Priority = 2011,
                             Sign = "Expense"
                         },
                         new
@@ -466,7 +466,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1105,
                             Category = "Home",
                             Pattern = "*leroy*",
-                            Priority = 11,
+                            Priority = 2011,
                             Sign = "Expense"
                         },
                         new
@@ -474,7 +474,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1201,
                             Category = "Health",
                             Pattern = "farmacia*",
-                            Priority = 12,
+                            Priority = 2012,
                             Sign = "Expense"
                         },
                         new
@@ -482,7 +482,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1202,
                             Category = "Health",
                             Pattern = "fcia",
-                            Priority = 12,
+                            Priority = 2012,
                             Sign = "Expense"
                         },
                         new
@@ -490,7 +490,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1203,
                             Category = "Health",
                             Pattern = "médico",
-                            Priority = 12,
+                            Priority = 2012,
                             Sign = "Expense"
                         },
                         new
@@ -498,7 +498,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1204,
                             Category = "Health",
                             Pattern = "clínica",
-                            Priority = 12,
+                            Priority = 2012,
                             Sign = "Expense"
                         },
                         new
@@ -506,7 +506,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1205,
                             Category = "Health",
                             Pattern = "dental",
-                            Priority = 12,
+                            Priority = 2012,
                             Sign = "Expense"
                         },
                         new
@@ -514,7 +514,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1206,
                             Category = "Health",
                             Pattern = "óptica",
-                            Priority = 12,
+                            Priority = 2012,
                             Sign = "Expense"
                         },
                         new
@@ -522,7 +522,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1207,
                             Category = "Health",
                             Pattern = "hospital",
-                            Priority = 12,
+                            Priority = 2012,
                             Sign = "Expense"
                         },
                         new
@@ -530,7 +530,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1301,
                             Category = "Transport",
                             Pattern = "parking",
-                            Priority = 13,
+                            Priority = 2013,
                             Sign = "Expense"
                         },
                         new
@@ -538,7 +538,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1302,
                             Category = "Transport",
                             Pattern = "aparcamiento",
-                            Priority = 13,
+                            Priority = 2013,
                             Sign = "Expense"
                         },
                         new
@@ -546,7 +546,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1303,
                             Category = "Transport",
                             Pattern = "gasolinera",
-                            Priority = 13,
+                            Priority = 2013,
                             Sign = "Expense"
                         },
                         new
@@ -554,7 +554,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1304,
                             Category = "Transport",
                             Pattern = "combustible*",
-                            Priority = 13,
+                            Priority = 2013,
                             Sign = "Expense"
                         },
                         new
@@ -562,7 +562,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1305,
                             Category = "Transport",
                             Pattern = "taxi",
-                            Priority = 13,
+                            Priority = 2013,
                             Sign = "Expense"
                         },
                         new
@@ -570,7 +570,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1306,
                             Category = "Transport",
                             Pattern = "itv",
-                            Priority = 13,
+                            Priority = 2013,
                             Sign = "Expense"
                         },
                         new
@@ -578,7 +578,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1307,
                             Category = "Transport",
                             Pattern = "peaje",
-                            Priority = 13,
+                            Priority = 2013,
                             Sign = "Expense"
                         },
                         new
@@ -586,7 +586,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1308,
                             Category = "Transport",
                             Pattern = "guagua",
-                            Priority = 13,
+                            Priority = 2013,
                             Sign = "Expense"
                         },
                         new
@@ -594,7 +594,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1309,
                             Category = "Transport",
                             Pattern = "*tgas*",
-                            Priority = 13,
+                            Priority = 2013,
                             Sign = "Expense"
                         },
                         new
@@ -602,7 +602,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1310,
                             Category = "Transport",
                             Pattern = "*titsa*",
-                            Priority = 13,
+                            Priority = 2013,
                             Sign = "Expense"
                         },
                         new
@@ -610,7 +610,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1311,
                             Category = "Transport",
                             Pattern = "*renfe*",
-                            Priority = 13,
+                            Priority = 2013,
                             Sign = "Expense"
                         },
                         new
@@ -618,7 +618,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1401,
                             Category = "Travel",
                             Pattern = "airline*",
-                            Priority = 14,
+                            Priority = 2014,
                             Sign = "Expense"
                         },
                         new
@@ -626,7 +626,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1402,
                             Category = "Travel",
                             Pattern = "hotel*",
-                            Priority = 14,
+                            Priority = 2014,
                             Sign = "Expense"
                         },
                         new
@@ -634,7 +634,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1403,
                             Category = "Travel",
                             Pattern = "*airbnb*",
-                            Priority = 14,
+                            Priority = 2014,
                             Sign = "Expense"
                         },
                         new
@@ -642,7 +642,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1404,
                             Category = "Travel",
                             Pattern = "aeropuerto",
-                            Priority = 14,
+                            Priority = 2014,
                             Sign = "Expense"
                         },
                         new
@@ -650,7 +650,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1405,
                             Category = "Travel",
                             Pattern = "booking",
-                            Priority = 14,
+                            Priority = 2014,
                             Sign = "Expense"
                         },
                         new
@@ -658,7 +658,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1406,
                             Category = "Travel",
                             Pattern = "bkg",
-                            Priority = 14,
+                            Priority = 2014,
                             Sign = "Expense"
                         },
                         new
@@ -666,7 +666,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1407,
                             Category = "Travel",
                             Pattern = "*vueling*",
-                            Priority = 14,
+                            Priority = 2014,
                             Sign = "Expense"
                         },
                         new
@@ -674,7 +674,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1408,
                             Category = "Travel",
                             Pattern = "*binter*",
-                            Priority = 14,
+                            Priority = 2014,
                             Sign = "Expense"
                         },
                         new
@@ -682,7 +682,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1409,
                             Category = "Travel",
                             Pattern = "*balearia*",
-                            Priority = 14,
+                            Priority = 2014,
                             Sign = "Expense"
                         },
                         new
@@ -690,7 +690,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1410,
                             Category = "Travel",
                             Pattern = "sixt",
-                            Priority = 14,
+                            Priority = 2014,
                             Sign = "Expense"
                         },
                         new
@@ -698,7 +698,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1501,
                             Category = "Pets",
                             Pattern = "veterinario",
-                            Priority = 15,
+                            Priority = 2015,
                             Sign = "Expense"
                         },
                         new
@@ -706,7 +706,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1502,
                             Category = "Pets",
                             Pattern = "mascota",
-                            Priority = 15,
+                            Priority = 2015,
                             Sign = "Expense"
                         },
                         new
@@ -714,7 +714,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1503,
                             Category = "Pets",
                             Pattern = "*kiwoko*",
-                            Priority = 15,
+                            Priority = 2015,
                             Sign = "Expense"
                         },
                         new
@@ -722,7 +722,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1601,
                             Category = "Cash",
                             Pattern = "cajero",
-                            Priority = 16,
+                            Priority = 2016,
                             Sign = "Expense"
                         },
                         new
@@ -730,7 +730,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1602,
                             Category = "Cash",
                             Pattern = "retirada",
-                            Priority = 16,
+                            Priority = 2016,
                             Sign = "Expense"
                         },
                         new
@@ -738,7 +738,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1701,
                             Category = "TransfersOut",
                             Pattern = "bizum",
-                            Priority = 17,
+                            Priority = 2017,
                             Sign = "Expense"
                         },
                         new
@@ -746,7 +746,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1702,
                             Category = "TransfersOut",
                             Pattern = "trf",
-                            Priority = 17,
+                            Priority = 2017,
                             Sign = "Expense"
                         },
                         new
@@ -754,7 +754,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1703,
                             Category = "TransfersOut",
                             Pattern = "transferencia",
-                            Priority = 17,
+                            Priority = 2017,
                             Sign = "Expense"
                         },
                         new
@@ -762,7 +762,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1801,
                             Category = "TransfersIn",
                             Pattern = "bizum",
-                            Priority = 18,
+                            Priority = 2018,
                             Sign = "Income"
                         },
                         new
@@ -770,7 +770,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1802,
                             Category = "TransfersIn",
                             Pattern = "trf",
-                            Priority = 18,
+                            Priority = 2018,
                             Sign = "Income"
                         },
                         new
@@ -778,7 +778,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1803,
                             Category = "TransfersIn",
                             Pattern = "transferencia",
-                            Priority = 18,
+                            Priority = 2018,
                             Sign = "Income"
                         },
                         new
@@ -786,7 +786,7 @@ namespace LexBank.Infrastructure.Migrations
                             Id = 1804,
                             Category = "TransfersIn",
                             Pattern = "devolución",
-                            Priority = 18,
+                            Priority = 2018,
                             Sign = "Income"
                         });
                 });
