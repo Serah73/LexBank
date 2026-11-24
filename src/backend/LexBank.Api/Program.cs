@@ -96,7 +96,7 @@ app.MapPut("/api/transactions/{id:int}/category", async (int id, CorrectCategory
 
 app.MapPost("/api/rules", async (CreateRuleRequest request, CreateRule createRule) =>
 {
-    if (request.Category is null || request.Sign is null) return Results.BadRequest();
+    if (request.Category is null or Category.Uncategorized || request.Sign is null) return Results.BadRequest();
     try
     {
         return Results.Created((string?)null, await createRule.ExecuteAsync(request.Pattern ?? string.Empty, request.Category.Value, request.Sign.Value));

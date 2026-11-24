@@ -103,4 +103,32 @@ public class RulesEndpointTests : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
+
+    [Fact]
+    public async Task CreateRule_PatternLongerThanTheMaximum_ReturnsBadRequestWithInvalidRulePattern()
+    {
+        var response = await _client.PostAsJsonAsync("/api/rules", new { pattern = new string('a', 101), category = "Restaurants", sign = "Expense" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("InvalidRulePattern", body.RootElement.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task CreateRule_PatternOfTheMaximumLength_IsCreated()
+    {
+        var response = await _client.PostAsJsonAsync("/api/rules", new { pattern = new string('a', 100), category = "Restaurants", sign = "Expense" });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateRule_UncategorizedCategory_ReturnsBadRequestAndCreatesNothing()
+    {
+        var response = await _client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Uncategorized", sign = "Expense" });
+        var next = await _client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Restaurants", sign = "Expense" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, next.StatusCode);
+    }
 }
