@@ -836,3 +836,122 @@ it('hides the saving error after logging out', async () => {
   await screen.findByRole('form', { name: 'Iniciar sesión' })
   expect(screen.queryByRole('alert')).toBeNull()
 })
+
+function stubRules(createRule: () => Promise<Response>, stored: unknown[] = [storedTransaction({ description: 'TJ-MERCADONA FINCA' })]) {
+  const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+    if (init?.method === 'PUT') {
+      const category = JSON.parse(init.body as string).category
+      return Promise.resolve(Response.json({ ...(stored[0] as object), category, corrected: true }))
+    }
+    if (url === '/api/rules' && init?.method === 'POST') return createRule()
+    return Promise.resolve(Response.json(stored))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  return fetchMock
+}
+
+async function correctTo(category: string, description = 'TJ-MERCADONA FINCA') {
+  fireEvent.change(await screen.findByRole('combobox', { name: `Categoría de ${description}` }), { target: { value: category } })
+}
+
+function ruleForm() {
+  return screen.findByRole('form', { name: 'Crear regla' })
+}
+
+it('offers to create a rule after a correction, with the description as pattern', async () => {
+  stubRules(() => Promise.reject(new Error('no rule expected')))
+  render(<App />)
+
+  await correctTo('Restaurants')
+
+  const form = within(await ruleForm())
+  expect((form.getByRole('textbox', { name: 'Patrón' }) as HTMLInputElement).value).toBe('TJ-MERCADONA FINCA')
+  expect(form.getByText(/Restaurantes y cafeterías/)).toBeTruthy()
+  expect(form.getByText(/Gasto/)).toBeTruthy()
+})
+
+it('does not offer a rule when the new category is "Sin categoría"', async () => {
+  stubRules(() => Promise.reject(new Error('no rule expected')))
+  render(<App />)
+
+  await correctTo('Uncategorized')
+
+  await screen.findByText('Corregida por ti')
+  expect(screen.queryByRole('form', { name: 'Crear regla' })).toBeNull()
+})
+
+it.each([
+  ['an expense', -23.45, 'Expense'],
+  ['an income', 1500, 'Income'],
+  ['a movement of zero', 0, 'Any'],
+])('creates the rule with the edited pattern, the chosen category and the sign of the amount (%s)', async (_case, amount, sign) => {
+  const fetchMock = stubRules(() => Promise.resolve(Response.json({}, { status: 201 })), [
+    storedTransaction({ description: 'TJ-MERCADONA FINCA', amount }),
+  ])
+  render(<App />)
+  await correctTo('Restaurants')
+  const form = within(await ruleForm())
+
+  fireEvent.change(form.getByRole('textbox', { name: 'Patrón' }), { target: { value: '*mercadona*' } })
+  fireEvent.click(form.getByRole('button', { name: 'Crear regla' }))
+
+  await waitFor(() => expect(screen.queryByRole('form', { name: 'Crear regla' })).toBeNull())
+  const [, init] = fetchMock.mock.calls.find(([url, init]) => url === '/api/rules' && init?.method === 'POST')!
+  expect(new Headers(init?.headers).get('Content-Type')).toBe('application/json')
+  expect(JSON.parse(init?.body as string)).toEqual({ pattern: '*mercadona*', category: 'Restaurants', sign })
+})
+
+it('closes the offer without creating anything when declined', async () => {
+  const fetchMock = stubRules(() => Promise.reject(new Error('no rule expected')))
+  render(<App />)
+  await correctTo('Restaurants')
+
+  fireEvent.click(within(await ruleForm()).getByRole('button', { name: 'Ahora no' }))
+
+  expect(screen.queryByRole('form', { name: 'Crear regla' })).toBeNull()
+  expect(fetchMock.mock.calls.some(([url, init]) => url === '/api/rules' && init?.method === 'POST')).toBe(false)
+})
+
+async function submitRule(createRule: () => Promise<Response>) {
+  stubRules(createRule)
+  render(<App />)
+  await correctTo('Restaurants')
+  const form = within(await ruleForm())
+  fireEvent.click(form.getByRole('button', { name: 'Crear regla' }))
+  return form
+}
+
+it.each([
+  ['InvalidRulePattern', 400, 'El patrón no es válido: necesita una palabra y como mucho un «*» en cada extremo'],
+  ['RuleAlreadyExists', 409, 'Ya existe una regla con ese patrón y ese signo'],
+])('shows the %s error under the pattern field and keeps the offer open', async (error, status, message) => {
+  const form = await submitRule(() => Promise.resolve(Response.json({ error }, { status })))
+
+  await waitFor(() => expect(form.getByRole('textbox', { name: 'Patrón' }).getAttribute('aria-invalid')).toBe('true'))
+  const field = form.getByRole('textbox', { name: 'Patrón' })
+  expect(document.getElementById(field.getAttribute('aria-describedby')!)!.textContent).toBe(message)
+  expect(screen.getByRole('form', { name: 'Crear regla' })).toBeTruthy()
+})
+
+it.each([
+  ['the server answers an unknown error', () => Promise.resolve(Response.json({ error: 'Other' }, { status: 500 }))],
+  ['the response is not JSON', () => Promise.resolve(new Response('<html></html>', { status: 500 }))],
+  ['the server is unreachable', () => Promise.reject(new TypeError('Failed to fetch'))],
+])('shows a generic message and keeps the offer open when %s', async (_case, createRule) => {
+  await submitRule(createRule)
+
+  expect((await screen.findByRole('alert')).textContent).toBe('No se pudo crear la regla')
+  expect(screen.getByRole('form', { name: 'Crear regla' })).toBeTruthy()
+})
+
+it('closes the rule offer when logging out', async () => {
+  stubRules(() => Promise.reject(new Error('no rule expected')))
+  render(<App />)
+  await correctTo('Restaurants')
+  await ruleForm()
+
+  fireEvent.click(screen.getByRole('button', { name: 'Cerrar sesión' }))
+
+  await screen.findByRole('form', { name: 'Iniciar sesión' })
+  expect(screen.queryByRole('form', { name: 'Crear regla' })).toBeNull()
+})
