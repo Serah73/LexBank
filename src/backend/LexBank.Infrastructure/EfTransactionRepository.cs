@@ -14,7 +14,7 @@ public class EfTransactionRepository(LexBankDbContext context) : ITransactionRep
         foreach (var transaction in transactions)
         {
             // Point to the stored rule, so saving does not insert a copy of it.
-            var toStore = transaction with { Rule = transaction.Rule is null ? null : storedRules.Single(r => r == transaction.Rule) };
+            var toStore = transaction with { Rule = transaction.Rule is null ? null : storedRules.Single(r => r.Id == transaction.Rule.Id) };
             context.Set<Transaction>().Add(toStore);
             context.Entry(toStore).Property("UserId").CurrentValue = userId;
             stored.Add(toStore);
