@@ -955,3 +955,47 @@ it('closes the rule offer when logging out', async () => {
   await screen.findByRole('form', { name: 'Iniciar sesión' })
   expect(screen.queryByRole('form', { name: 'Crear regla' })).toBeNull()
 })
+
+it('closes the previous rule offer when another correction fails', async () => {
+  const stored = [
+    storedTransaction({ id: 1, description: 'PRIMERA' }),
+    storedTransaction({ id: 2, description: 'SEGUNDA' }),
+  ]
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string, init?: RequestInit) =>
+      init?.method !== 'PUT'
+        ? Promise.resolve(Response.json(stored))
+        : url === '/api/transactions/1/category'
+          ? Promise.resolve(Response.json({ ...stored[0], category: 'Restaurants', corrected: true }))
+          : Promise.resolve(new Response(null, { status: 500 })),
+    ),
+  )
+  render(<App />)
+  await correctTo('Restaurants', 'PRIMERA')
+  await ruleForm()
+
+  await correctTo('Restaurants', 'SEGUNDA')
+
+  await screen.findByRole('alert')
+  expect(screen.queryByRole('form', { name: 'Crear regla' })).toBeNull()
+})
+
+it('closes the rule offer when a statement is uploaded', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((_url: string, init?: RequestInit) => {
+      if (init?.method === 'PUT')
+        return Promise.resolve(Response.json(storedTransaction({ category: 'Restaurants', corrected: true })))
+      if (init?.method === 'POST') return Promise.resolve(Response.json({ transactions: [storedTransaction()], failedRows: [] }))
+      return Promise.resolve(Response.json([storedTransaction()]))
+    }),
+  )
+  const { container } = render(<App />)
+  await correctTo('Restaurants', 'COMPRA')
+  await ruleForm()
+
+  uploadFile(container)
+
+  await waitFor(() => expect(screen.queryByRole('form', { name: 'Crear regla' })).toBeNull())
+})

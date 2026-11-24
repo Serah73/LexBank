@@ -72,6 +72,7 @@ function App() {
     if (!file) return
     event.target.value = ''
     setCorrectionError(null)
+    setOffer(null)
 
     const body = new FormData()
     body.append('file', file)
@@ -98,6 +99,7 @@ function App() {
 
   async function handleCategoryChange(id: number, category: Category) {
     setCorrectionError(null)
+    setOffer(null)
     try {
       const response = await fetch(`/api/transactions/${id}/category`, {
         method: 'PUT',
