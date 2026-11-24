@@ -72,6 +72,104 @@ public class RulesEndpointTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task CreateRule_SamePatternAndSignAlreadyExistsWithAnotherCategory_ReturnsConflictWithTheExistingRule()
+    {
+        var first = await _client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Restaurants", sign = "Expense" });
+        using var firstBody = JsonDocument.Parse(await first.Content.ReadAsStringAsync());
+
+        var userRule = await _client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Health", sign = "Expense" });
+        var seededRule = await _client.PostAsJsonAsync("/api/rules", new { pattern = "*mercadona*", category = "Health", sign = "Expense" });
+
+        using var userRuleBody = JsonDocument.Parse(await userRule.Content.ReadAsStringAsync());
+        var existing = userRuleBody.RootElement.GetProperty("rule");
+        Assert.Equal(firstBody.RootElement.GetProperty("id").GetInt32(), existing.GetProperty("id").GetInt32());
+        Assert.Equal("finca", existing.GetProperty("pattern").GetString());
+        Assert.Equal("Restaurants", existing.GetProperty("category").GetString());
+        Assert.Equal("Expense", existing.GetProperty("sign").GetString());
+        Assert.Equal(1999, existing.GetProperty("priority").GetInt32());
+
+        using var seededRuleBody = JsonDocument.Parse(await seededRule.Content.ReadAsStringAsync());
+        var seeded = seededRuleBody.RootElement.GetProperty("rule");
+        Assert.Equal("*mercadona*", seeded.GetProperty("pattern").GetString());
+        Assert.Equal("Groceries", seeded.GetProperty("category").GetString());
+        Assert.Equal("Expense", seeded.GetProperty("sign").GetString());
+        Assert.Equal(2006, seeded.GetProperty("priority").GetInt32());
+        Assert.True(seeded.GetProperty("id").GetInt32() > 0);
+    }
+
+    [Fact]
+    public async Task ChangeRuleCategory_UserRule_ReturnsOkWithTheNewCategoryAndKeepsPatternSignAndPriority()
+    {
+        var created = await _client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Restaurants", sign = "Expense" });
+        using var createdBody = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
+        var id = createdBody.RootElement.GetProperty("id").GetInt32();
+
+        var response = await _client.PutAsJsonAsync($"/api/rules/{id}/category", new { category = "Health" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(id, body.RootElement.GetProperty("id").GetInt32());
+        Assert.Equal("finca", body.RootElement.GetProperty("pattern").GetString());
+        Assert.Equal("Health", body.RootElement.GetProperty("category").GetString());
+        Assert.Equal("Expense", body.RootElement.GetProperty("sign").GetString());
+        Assert.Equal(1999, body.RootElement.GetProperty("priority").GetInt32());
+    }
+
+    [Fact]
+    public async Task ChangeRuleCategory_SeededRule_ReturnsOkWithTheNewCategory()
+    {
+        var conflict = await _client.PostAsJsonAsync("/api/rules", new { pattern = "*mercadona*", category = "Health", sign = "Expense" });
+        using var conflictBody = JsonDocument.Parse(await conflict.Content.ReadAsStringAsync());
+        var id = conflictBody.RootElement.GetProperty("rule").GetProperty("id").GetInt32();
+
+        var response = await _client.PutAsJsonAsync($"/api/rules/{id}/category", new { category = "Health" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("*mercadona*", body.RootElement.GetProperty("pattern").GetString());
+        Assert.Equal("Health", body.RootElement.GetProperty("category").GetString());
+        Assert.Equal(2006, body.RootElement.GetProperty("priority").GetInt32());
+    }
+
+    [Fact]
+    public async Task ChangeRuleCategory_UnknownId_ReturnsNotFound()
+    {
+        var response = await _client.PutAsJsonAsync("/api/rules/999999/category", new { category = "Health" });
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"category\": \"Uncategorized\"}")]
+    [InlineData("{\"category\": \"NotACategory\"}")]
+    [InlineData("{\"category\": 1}")]
+    public async Task ChangeRuleCategory_UncategorizedMissingOrUnknownCategory_ReturnsBadRequestAndChangesNothing(string json)
+    {
+        var created = await _client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Restaurants", sign = "Expense" });
+        using var createdBody = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
+        var id = createdBody.RootElement.GetProperty("id").GetInt32();
+        using var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+        var response = await _client.PutAsync($"/api/rules/{id}/category", content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var again = await _client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Health", sign = "Expense" });
+        using var againBody = JsonDocument.Parse(await again.Content.ReadAsStringAsync());
+        Assert.Equal("Restaurants", againBody.RootElement.GetProperty("rule").GetProperty("category").GetString());
+    }
+
+    [Fact]
+    public async Task ChangeRuleCategory_WithoutSession_ReturnsUnauthorized()
+    {
+        using var anonymous = _factory.CreateClient();
+
+        var response = await anonymous.PutAsJsonAsync("/api/rules/1/category", new { category = "Health" });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
     public async Task CreateRule_SamePatternWithAnotherSign_IsCreated()
     {
         var response = await _client.PostAsJsonAsync("/api/rules", new { pattern = "*mercadona*", category = "Restaurants", sign = "Income" });

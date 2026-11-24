@@ -60,4 +60,29 @@ public class EfRuleRepositoryTests : IDisposable
 
         Assert.Equal(expected, category);
     }
+
+    [Fact]
+    public async Task ListAsync_SeededRules_ReturnsThemWithTheIdsOfInitialRules()
+    {
+        var rules = await new EfRuleRepository(_context).ListAsync();
+
+        Assert.Equal(
+            InitialRules.All.Select(r => (r.Id, r.Rule.Pattern)).OrderBy(r => r.Id),
+            rules.Select(r => (r.Id, r.Pattern)).OrderBy(r => r.Id));
+    }
+
+    [Fact]
+    public async Task UpdateAsync_RuleWithAnotherCategory_ChangesItInPlaceWithoutCreatingARule()
+    {
+        var repository = new EfRuleRepository(_context);
+        var before = await repository.ListAsync();
+        var seeded = before.First(r => r.Pattern == "*mercadona*");
+
+        await repository.UpdateAsync(seeded with { Category = Category.Health });
+
+        var after = await repository.ListAsync();
+        Assert.Equal(before.Count, after.Count);
+        var changed = Assert.Single(after, r => r.Id == seeded.Id);
+        Assert.Equal(seeded with { Category = Category.Health }, changed);
+    }
 }

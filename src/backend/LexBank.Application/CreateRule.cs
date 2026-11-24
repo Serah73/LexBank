@@ -13,8 +13,8 @@ public class CreateRule(IRuleRepository repository)
         if (!Rule.IsValidPattern(pattern)) throw new InvalidRulePatternException();
 
         var rules = await repository.ListAsync();
-        if (rules.Any(r => r.Sign == sign && string.Equals(r.Pattern, pattern, StringComparison.OrdinalIgnoreCase)))
-            throw new RuleAlreadyExistsException();
+        var existing = rules.FirstOrDefault(r => r.Sign == sign && string.Equals(r.Pattern, pattern, StringComparison.OrdinalIgnoreCase));
+        if (existing is not null) throw new RuleAlreadyExistsException(existing);
 
         // The newest rule has the lowest number, so it wins over the older ones.
         var userPriorities = rules.Select(r => r.Priority).Where(p => p is >= LowestUserPriority and <= FirstUserPriority).ToList();

@@ -4,6 +4,8 @@ public record Rule(string Pattern, Category Category, AmountSign Sign = AmountSi
 {
     public const int MaxPatternLength = 100;
 
+    public int Id { get; init; }
+
     // A pattern needs a word, has a maximum length and allows at most one "*" at each end.
     public static bool IsValidPattern(string pattern) =>
         !string.IsNullOrWhiteSpace(pattern)
