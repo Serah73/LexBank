@@ -2,10 +2,13 @@ using LexBank.Domain;
 
 namespace LexBank.Infrastructure;
 
-// Priority 1 is the highest. A category's patterns share its priority; categories follow the order of the story's annex.
-// A rule's id is its priority times 100 plus its position in the category's list, so append new patterns at the end of the list.
+// A category's patterns share its priority; categories follow the order of the story's annex; the lower the priority number, the earlier the rule wins.
+// A rule's id is its group number times 100 plus its position in the category's list, so append new patterns at the end of the list.
 public static class InitialRules
 {
+    // A priority has four digits: the first is its type (2 = strong patterns) and the rest its number inside the type.
+    private const int StrongPatternsPriority = 2000;
+
     public static IReadOnlyList<(int Id, Rule Rule)> All { get; } = Build(
         (1, Category.Interest, AmountSign.Income, ["interés", "intereses"]),
         (2, Category.Salary, AmountSign.Income, ["nómina", "salario"]),
@@ -35,5 +38,5 @@ public static class InitialRules
 
     private static List<(int Id, Rule Rule)> Build(params (int Priority, Category Category, AmountSign Sign, string[] Patterns)[] groups) =>
         groups.SelectMany(g => g.Patterns.Select((p, position) =>
-            (g.Priority * 100 + position + 1, new Rule(p, g.Category, g.Sign, g.Priority)))).ToList();
+            (g.Priority * 100 + position + 1, new Rule(p, g.Category, g.Sign, StrongPatternsPriority + g.Priority)))).ToList();
 }

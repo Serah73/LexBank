@@ -21,4 +21,10 @@ public class InitialRulesTests
 
         Assert.Equal(expectedId, id);
     }
+
+    [Fact]
+    public void All_EveryRule_HasAStrongPatternsPriority()
+    {
+        Assert.All(InitialRules.All, r => Assert.InRange(r.Rule.Priority, 2001, 2999));
+    }
 }

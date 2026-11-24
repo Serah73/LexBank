@@ -38,6 +38,8 @@ export type SignUpError = 'EmailAlreadyRegistered' | 'InvalidEmail' | 'InvalidPa
 
 export type CorrectionError = 'CorrectionFailed'
 
+export type RuleError = 'InvalidRulePattern' | 'RuleAlreadyExists' | 'RuleCreationFailed'
+
 export type LogInError = 'InvalidCredentials' | 'LogInFailed'
 
 export const logInErrorMessages: Record<LogInError, string> = {
@@ -72,7 +74,7 @@ export const categoryNames: Record<Category, string> = {
   Uncategorized: 'Sin categoría',
 }
 
-const ruleSignNames: Record<RuleSign, string> = {
+export const ruleSignNames: Record<RuleSign, string> = {
   Any: 'Movimiento',
   Expense: 'Gasto',
   Income: 'Ingreso',
@@ -114,4 +116,10 @@ export const statementErrorMessages: Record<StatementError, string> = {
 
 export const correctionErrorMessages: Record<CorrectionError, string> = {
   CorrectionFailed: 'No se pudo guardar la categoría',
+}
+
+export const ruleErrorMessages: Record<RuleError, string> = {
+  InvalidRulePattern: 'El patrón no es válido: necesita una palabra y como mucho un «*» en cada extremo',
+  RuleAlreadyExists: 'Ya existe una regla con ese patrón y ese signo',
+  RuleCreationFailed: 'No se pudo crear la regla',
 }

@@ -23,7 +23,7 @@ public class LexBankDbContext(DbContextOptions<LexBankDbContext> options) : DbCo
         {
             rule.Property<int>("Id");
             rule.HasKey("Id");
-            rule.Property(r => r.Pattern).HasMaxLength(100);
+            rule.Property(r => r.Pattern).HasMaxLength(Rule.MaxPatternLength);
             rule.Property(r => r.Category).HasConversion<string>().HasMaxLength(30);
             rule.Property(r => r.Sign).HasConversion<string>().HasMaxLength(10);
             rule.HasData(InitialRules.All.Select(r => new { r.Id, r.Rule.Pattern, r.Rule.Category, r.Rule.Sign, r.Rule.Priority }));

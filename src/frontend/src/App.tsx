@@ -3,6 +3,8 @@ import type { ChangeEvent } from 'react'
 import LogInForm from './LogInForm'
 import { bankNames, categoryNames, correctionErrorMessages, describeRule, failedRowMessages, statementErrorMessages } from './messages'
 import type { Bank, Category, CorrectionError, FailedRowReason, Rule, StatementError } from './messages'
+import RuleOfferForm from './RuleOfferForm'
+import type { RuleOffer } from './RuleOfferForm'
 import SignUpForm from './SignUpForm'
 
 interface Transaction {
@@ -34,6 +36,7 @@ function App() {
   const [error, setError] = useState<StatementError | null>(null)
   const [skipped, setSkipped] = useState(0)
   const [signedOut, setSignedOut] = useState(false)
+  const [offer, setOffer] = useState<{ id: number } & RuleOffer | null>(null)
   const [correctionError, setCorrectionError] = useState<CorrectionError | null>(null)
 
   const uploaded = useRef(false)
@@ -69,6 +72,7 @@ function App() {
     if (!file) return
     event.target.value = ''
     setCorrectionError(null)
+    setOffer(null)
 
     const body = new FormData()
     body.append('file', file)
@@ -95,6 +99,7 @@ function App() {
 
   async function handleCategoryChange(id: number, category: Category) {
     setCorrectionError(null)
+    setOffer(null)
     try {
       const response = await fetch(`/api/transactions/${id}/category`, {
         method: 'PUT',
@@ -104,6 +109,16 @@ function App() {
       const updated: Transaction = await response.json()
       if (!response.ok || updated?.id !== id) throw new Error('The correction was not saved')
       setTransactions((current) => current.map((t) => (t.id === id ? updated : t)))
+      setOffer(
+        updated.category === 'Uncategorized'
+          ? null
+          : {
+              id,
+              description: updated.description,
+              category: updated.category,
+              sign: updated.amount < 0 ? 'Expense' : updated.amount > 0 ? 'Income' : 'Any',
+            },
+      )
     } catch {
       setCorrectionError('CorrectionFailed')
     }
@@ -117,6 +132,7 @@ function App() {
     setSkipped(0)
     setError(null)
     setCorrectionError(null)
+    setOffer(null)
     setSignedOut(true)
   }
 
@@ -139,6 +155,7 @@ function App() {
       )}
       {error && <p role="alert">{statementErrorMessages[error]}</p>}
       {correctionError && <p role="alert">{correctionErrorMessages[correctionError]}</p>}
+      {offer && <RuleOfferForm key={`${offer.id}-${offer.category}`} offer={offer} onClose={() => setOffer(null)} />}
       {skipped > 0 && <p>Movimientos omitidos por estar ya importados: {skipped}</p>}
       {transactions.length > 0 && (
         <table>
