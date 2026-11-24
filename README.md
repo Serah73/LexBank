@@ -140,7 +140,8 @@ The project is under active development.
 | Automatic categorization of transactions on import, with a seeded set of rules | Implemented |
 | Display of the rule that assigned each category | Implemented |
 | Correction of the category of a transaction | Implemented |
-| Rule management | Planned |
+| Creation of a rule from a correction | Implemented |
+| Viewing, editing and deleting rules | Planned |
 | Accuracy measurement and spending charts | Planned |
 | Spanish and English user interface | Planned (Spanish only for now) |
 | Visual design with light and dark themes | Planned |
