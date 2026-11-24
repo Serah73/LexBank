@@ -21,8 +21,7 @@ public class LexBankDbContext(DbContextOptions<LexBankDbContext> options) : DbCo
 
         modelBuilder.Entity<Rule>(rule =>
         {
-            rule.Property<int>("Id");
-            rule.HasKey("Id");
+            rule.HasKey(r => r.Id);
             rule.Property(r => r.Pattern).HasMaxLength(Rule.MaxPatternLength);
             rule.Property(r => r.Category).HasConversion<string>().HasMaxLength(30);
             rule.Property(r => r.Sign).HasConversion<string>().HasMaxLength(10);

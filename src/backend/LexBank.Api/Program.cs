@@ -20,6 +20,7 @@ builder.Services.AddScoped<IRuleRepository, EfRuleRepository>();
 builder.Services.AddScoped<UploadStatement>();
 builder.Services.AddScoped<CorrectCategory>();
 builder.Services.AddScoped<CreateRule>();
+builder.Services.AddScoped<ChangeRuleCategory>();
 builder.Services.AddScoped<IUserRepository, EfUserRepository>();
 builder.Services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
 builder.Services.AddScoped<SignUp>();
@@ -105,13 +106,26 @@ app.MapPost("/api/rules", async (CreateRuleRequest request, CreateRule createRul
     {
         return Results.BadRequest(new { error = "InvalidRulePattern" });
     }
-    catch (RuleAlreadyExistsException)
+    catch (RuleAlreadyExistsException exception)
     {
-        return Results.Conflict(new { error = "RuleAlreadyExists" });
+        return Results.Conflict(new { error = "RuleAlreadyExists", rule = exception.Existing });
     }
 }).RequireAuthorization();
 
-app.MapPost("/api/users", async (SignUpRequest request, SignUp signUp) =>
+app.MapPut("/api/rules/{id:int}/category", async (int id, ChangeRuleCategoryRequest request, ChangeRuleCategory changeRuleCategory) =>
+{
+    if (request.Category is null or Category.Uncategorized) return Results.BadRequest();
+    try
+    {
+        return Results.Ok(await changeRuleCategory.ExecuteAsync(id, request.Category.Value));
+    }
+    catch (RuleNotFoundException)
+    {
+        return Results.NotFound();
+    }
+}).RequireAuthorization();
+
+app.MapPost("/api/users",async (SignUpRequest request, SignUp signUp) =>
 {
     try
     {
@@ -162,6 +176,8 @@ app.Run();
 public record SignUpRequest(string? Email, string? Password);
 
 public record CorrectCategoryRequest(Category? Category);
+
+public record ChangeRuleCategoryRequest(Category? Category);
 
 public record CreateRuleRequest(string? Pattern, Category? Category, AmountSign? Sign);
 

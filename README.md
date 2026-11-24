@@ -141,6 +141,7 @@ The project is under active development.
 | Display of the rule that assigned each category | Implemented |
 | Correction of the category of a transaction | Implemented |
 | Creation of a rule from a correction | Implemented |
+| Replacement of the category of an existing rule | Implemented |
 | Viewing, editing and deleting rules | Planned |
 | Accuracy measurement and spending charts | Planned |
 | Spanish and English user interface | Planned (Spanish only for now) |

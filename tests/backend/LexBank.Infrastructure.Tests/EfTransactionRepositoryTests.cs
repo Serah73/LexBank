@@ -122,6 +122,25 @@ public class EfTransactionRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task AddAsync_RuleChangedAfterItWasRead_StoresTheTransactionWithTheStoredRule()
+    {
+        var repository = new EfTransactionRepository(_context);
+        var rules = await new EfRuleRepository(_context).ListAsync();
+        var staleRule = rules.Single(r => r.Pattern == "*mercadona*");
+        await new EfRuleRepository(_context).UpdateAsync(staleRule with { Category = Category.Health });
+
+        await repository.AddAsync(Email,
+        [
+            new Transaction(new DateOnly(2025, 1, 10), "COMPRA MERCADONA", -10.00m, 100.00m, Bank.Ruralvia, Category.Groceries) { Rule = staleRule },
+        ]);
+        var stored = await repository.ListAsync(Email);
+
+        Assert.Equal(staleRule.Id, stored.Single().Rule!.Id);
+        Assert.Equal(Category.Health, stored.Single().Rule!.Category);
+        Assert.Equal(rules.Count, await _context.Set<Rule>().CountAsync());
+    }
+
+    [Fact]
     public async Task ListAsync_StoredTransactionWithoutRule_ReturnsNoRule()
     {
         var repository = new EfTransactionRepository(_context);

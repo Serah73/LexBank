@@ -26,6 +26,7 @@ export type Category =
 export type RuleSign = 'Any' | 'Expense' | 'Income'
 
 export interface Rule {
+  id: number
   pattern: string
   category: Category
   sign: RuleSign
@@ -38,7 +39,7 @@ export type SignUpError = 'EmailAlreadyRegistered' | 'InvalidEmail' | 'InvalidPa
 
 export type CorrectionError = 'CorrectionFailed'
 
-export type RuleError = 'InvalidRulePattern' | 'RuleAlreadyExists' | 'RuleCreationFailed'
+export type RuleError = 'InvalidRulePattern' | 'RuleAlreadyExists' | 'RuleCreationFailed' | 'RuleUpdateFailed'
 
 export type LogInError = 'InvalidCredentials' | 'LogInFailed'
 
@@ -122,4 +123,5 @@ export const ruleErrorMessages: Record<RuleError, string> = {
   InvalidRulePattern: 'El patrón no es válido: necesita una palabra y como mucho un «*» en cada extremo',
   RuleAlreadyExists: 'Ya existe una regla con ese patrón y ese signo',
   RuleCreationFailed: 'No se pudo crear la regla',
+  RuleUpdateFailed: 'No se pudo cambiar la categoría de la regla',
 }

@@ -167,6 +167,50 @@ public class StatementsEndpointTests : IAsyncLifetime
         Assert.Equal("Expense", rule.GetProperty("sign").GetString());
     }
 
+    // The id of the seeded rule "*mercadona*" for expenses, found through the conflict of creating it again.
+    private static async Task<int> MercadonaRuleIdAsync(HttpClient client)
+    {
+        var conflict = await client.PostAsJsonAsync("/api/rules", new { pattern = "*mercadona*", category = "Health", sign = "Expense" });
+        using var body = JsonDocument.Parse(await conflict.Content.ReadAsStringAsync());
+        return body.RootElement.GetProperty("rule").GetProperty("id").GetInt32();
+    }
+
+    [Fact]
+    public async Task Upload_AfterChangingTheCategoryOfARule_CategorizesWithTheNewCategory()
+    {
+        var reader = new StubStatementReader
+        {
+            Transactions = [new Transaction(new DateOnly(2025, 1, 10), "tj-mercadona finca espana", -23.40m, 100m, Bank.Ruralvia)],
+        };
+        using var client = await ClientReadingWithAsync(reader);
+        var id = await MercadonaRuleIdAsync(client);
+        await client.PutAsJsonAsync($"/api/rules/{id}/category", new { category = "Health" });
+
+        var response = await client.PostAsync("/api/statements", AnyFileUpload());
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var first = body.RootElement.GetProperty("transactions")[0];
+        Assert.Equal("Health", first.GetProperty("category").GetString());
+        Assert.Equal("Health", first.GetProperty("rule").GetProperty("category").GetString());
+    }
+
+    [Fact]
+    public async Task ListTransactions_CategorizedTransaction_ReturnsItsRuleWithTheIdOfTheStoredRule()
+    {
+        var reader = new StubStatementReader
+        {
+            Transactions = [new Transaction(new DateOnly(2025, 1, 10), "tj-mercadona finca espana", -23.40m, 100m, Bank.Ruralvia)],
+        };
+        using var client = await ClientReadingWithAsync(reader);
+        var id = await MercadonaRuleIdAsync(client);
+        await client.PostAsync("/api/statements", AnyFileUpload());
+
+        var response = await client.GetAsync("/api/transactions");
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(id, body.RootElement[0].GetProperty("rule").GetProperty("id").GetInt32());
+    }
+
     [Fact]
     public async Task Upload_SeveralRulesMatch_ReturnsTheRuleWithTheHighestPriority()
     {
