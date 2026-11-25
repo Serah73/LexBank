@@ -8,10 +8,13 @@ For the purpose and scope of the project, see the [main README](../../README.md)
 
 The frontend is deliberately minimal at this stage: the thesis prioritizes the backend and the categorization logic, and the visual design is scheduled for the final stories.
 
-- One screen with two views. Without a session, it shows the sign-up form and the log-in form (email and password). The sign-up form creates an account and confirms it, with each error from the API shown under its field; it does not start a session. The log-in form starts the session and shows a general message when the credentials are not valid.
-- With a session, it shows a button to log out and the import part: a file input to import an XLSX or CSV statement, the transactions table (date, description, amount, balance, bank, category and the rule that assigned it, written as a Spanish sentence) and the list of rows that could not be read.
+- Three pages, each with its own address ([ADR-0008](../../docs/adr/0008-react-router-for-navigation.md)): `/login`, `/transactions` and `/rules`. The address `/` redirects to `/transactions`.
+- `/login` shows the sign-up form and the log-in form (email and password). The sign-up form creates an account and confirms it, with each error from the API shown under its field; it does not start a session. The log-in form starts the session, takes the user to `/transactions` and shows a general message when the credentials are not valid.
+- The pages that need a session (`/transactions` and `/rules`) share a bar with a link to each of them and a button to log out, which ends the session and goes to `/login`.
+- `/rules` lists every rule, the one that wins first at the top, as a Spanish sentence (the same one shown in the transactions table) with its category. If the rules cannot be loaded, a message is shown.
+- `/transactions` shows the import part: a file input to import an XLSX or CSV statement, the transactions table (date, description, amount, balance, bank, category and the rule that assigned it, written as a Spanish sentence) and the list of rows that could not be read.
 - The category of each transaction is a selector with every category, "Sin categoría" included. Choosing another one saves it at once and the rule cell then reads "Corregida por ti"; if saving fails, the row keeps its previous category and a message is shown. After a correction to a category other than "Sin categoría", a "Crear regla" form below the table offers to create a rule with the transaction's description as an editable pattern, the new category and the sign of the amount; the user can confirm or decline, and the errors of the API are shown under the pattern field. When a rule with the same pattern and sign already exists with another category, the form shows its current category and asks whether to replace it with the new one; "Reemplazar" changes the category of that rule and "No reemplazar" goes back to the form to edit the pattern.
-- The screen assumes there is a session until the first request for the stored transactions is answered with `401`.
+- A page that needs a session redirects to `/login` when the API answers its first request with `401`.
 - When an import skips transactions that were already stored, the screen shows how many were skipped.
 - The stored transactions are loaded when the page opens.
 - The interface is in Spanish only; English is planned.
@@ -24,20 +27,26 @@ The frontend is deliberately minimal at this stage: the thesis prioritizes the b
 | UI library | React 19 |
 | Language | TypeScript |
 | Build and development server | Vite |
+| Navigation | React Router ([ADR-0008](../../docs/adr/0008-react-router-for-navigation.md)) |
 | Tests | Vitest, React Testing Library and jsdom ([ADR-0005](../../docs/adr/0005-vitest-for-frontend-tests.md)) |
 | Linter | oxlint |
 
 ## Structure
 
 ```
-index.html         Entry page
-public/            Static assets (application icon)
-src/main.tsx       Application bootstrap
-src/App.tsx        Main screen
-src/SignUpForm.tsx Sign-up form
-src/LogInForm.tsx  Log-in form
-src/App.test.tsx   Tests of the main screen
-src/messages.ts    Translation of the API codes into user-facing text
+index.html                Entry page
+public/                   Static assets (application icon)
+src/main.tsx              Application bootstrap
+src/App.tsx               Router: the routes of the application
+src/Layout.tsx            Links and log-out shared by the pages that need a session
+src/LogInPage.tsx         Log-in page (sign-up and log-in forms)
+src/TransactionsPage.tsx  Transactions page: import, table and corrections
+src/RulesPage.tsx         Rules page: the list of rules
+src/SignUpForm.tsx        Sign-up form
+src/LogInForm.tsx         Log-in form
+src/App.test.tsx          Tests of the log-in and transactions pages
+src/RulesPage.test.tsx    Tests of the rules page and the navigation
+src/messages.ts           Translation of the API codes into user-facing text
 ```
 
 ## Communication with the API

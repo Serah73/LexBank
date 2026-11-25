@@ -72,6 +72,19 @@ public class EfRuleRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task ListAsync_RulesWithSamePriority_ReturnsThemByPriorityThenId()
+    {
+        var repository = new EfRuleRepository(_context);
+        await repository.AddAsync(new Rule("tie-b", Category.Health, Priority: 5));
+        await repository.AddAsync(new Rule("first", Category.Health, Priority: 1));
+        await repository.AddAsync(new Rule("tie-a", Category.Health, Priority: 5));
+
+        var rules = await repository.ListAsync();
+
+        Assert.Equal(["first", "tie-b", "tie-a"], rules.Take(3).Select(r => r.Pattern));
+    }
+
+    [Fact]
     public async Task UpdateAsync_RuleWithAnotherCategory_ChangesItInPlaceWithoutCreatingARule()
     {
         var repository = new EfRuleRepository(_context);
