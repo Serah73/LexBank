@@ -19,6 +19,7 @@ builder.Services.AddScoped<ITransactionRepository, EfTransactionRepository>();
 builder.Services.AddScoped<IRuleRepository, EfRuleRepository>();
 builder.Services.AddScoped<UploadStatement>();
 builder.Services.AddScoped<CorrectCategory>();
+builder.Services.AddScoped<ApplyRules>();
 builder.Services.AddScoped<CreateRule>();
 builder.Services.AddScoped<ChangeRuleCategory>();
 builder.Services.AddScoped<IUserRepository, EfUserRepository>();
@@ -81,6 +82,9 @@ app.MapPost("/api/statements", async (IFormFile file, ClaimsPrincipal user, Uplo
 
 app.MapGet("/api/transactions", async (ClaimsPrincipal user, ITransactionRepository repository) =>
     Results.Ok(await repository.ListAsync(user.FindFirstValue(ClaimTypes.Email)!))).RequireAuthorization();
+
+app.MapPost("/api/transactions/apply-rules", async (ClaimsPrincipal user, ApplyRules applyRules) =>
+    Results.Ok(new { changed = await applyRules.ExecuteAsync(user.FindFirstValue(ClaimTypes.Email)!) })).RequireAuthorization();
 
 app.MapPut("/api/transactions/{id:int}/category", async (int id, CorrectCategoryRequest request, ClaimsPrincipal user, CorrectCategory correctCategory) =>
 {

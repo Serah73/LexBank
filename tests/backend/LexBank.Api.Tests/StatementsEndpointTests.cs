@@ -731,6 +731,101 @@ public class StatementsEndpointTests : IAsyncLifetime
         Assert.False(body.RootElement[0].GetProperty("corrected").GetBoolean());
     }
 
+    [Fact]
+    public async Task ApplyRules_WithoutSession_ReturnsUnauthorized()
+    {
+        using var anonymous = _factory.CreateClient();
+
+        var response = await anonymous.PostAsync("/api/transactions/apply-rules", null);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ApplyRules_RuleCreatedAfterImport_RecategorizesTheTransactionAndReturnsTheCount()
+    {
+        using var client = await ClientReadingWithAsync(ReaderWithOneTransaction("zzz finca qqq"));
+        await client.PostAsync("/api/statements", AnyFileUpload());
+        await client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Restaurants", sign = "Expense" });
+
+        var response = await client.PostAsync("/api/transactions/apply-rules", null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(1, body.RootElement.GetProperty("changed").GetInt32());
+        using var stored = JsonDocument.Parse(await client.GetStringAsync("/api/transactions"));
+        var transaction = stored.RootElement[0];
+        Assert.Equal("Restaurants", transaction.GetProperty("category").GetString());
+        Assert.Equal("finca", transaction.GetProperty("rule").GetProperty("pattern").GetString());
+        Assert.False(transaction.GetProperty("corrected").GetBoolean());
+    }
+
+    [Fact]
+    public async Task ApplyRules_RuleCategoryReplaced_RecategorizesItsTransactions()
+    {
+        using var client = await ClientReadingWithAsync(ReaderWithOneTransaction("zzz finca qqq"));
+        var created = await client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Restaurants", sign = "Expense" });
+        using var rule = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
+        await client.PostAsync("/api/statements", AnyFileUpload());
+        await client.PutAsJsonAsync($"/api/rules/{rule.RootElement.GetProperty("id").GetInt32()}/category", new { category = "Health" });
+
+        var response = await client.PostAsync("/api/transactions/apply-rules", null);
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(1, body.RootElement.GetProperty("changed").GetInt32());
+        using var stored = JsonDocument.Parse(await client.GetStringAsync("/api/transactions"));
+        Assert.Equal("Health", stored.RootElement[0].GetProperty("category").GetString());
+    }
+
+    [Fact]
+    public async Task ApplyRules_CorrectedTransaction_KeepsTheCategoryAndUpdatesTheRule()
+    {
+        using var client = await ClientReadingWithAsync(ReaderWithOneTransaction("zzz finca qqq"));
+        var upload = await client.PostAsync("/api/statements", AnyFileUpload());
+        using var uploaded = JsonDocument.Parse(await upload.Content.ReadAsStringAsync());
+        var id = uploaded.RootElement.GetProperty("transactions")[0].GetProperty("id").GetInt32();
+        await client.PutAsJsonAsync($"/api/transactions/{id}/category", new { category = "Health" });
+        await client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Restaurants", sign = "Expense" });
+
+        var response = await client.PostAsync("/api/transactions/apply-rules", null);
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(0, body.RootElement.GetProperty("changed").GetInt32());
+        using var stored = JsonDocument.Parse(await client.GetStringAsync("/api/transactions"));
+        var transaction = stored.RootElement[0];
+        Assert.Equal("Health", transaction.GetProperty("category").GetString());
+        Assert.True(transaction.GetProperty("corrected").GetBoolean());
+        Assert.Equal("finca", transaction.GetProperty("rule").GetProperty("pattern").GetString());
+    }
+
+    [Fact]
+    public async Task ApplyRules_NothingChanged_ReturnsZero()
+    {
+        using var client = await ClientReadingWithAsync(ReaderWithOneTransaction("tj-mercadona finca espana"));
+        await client.PostAsync("/api/statements", AnyFileUpload());
+
+        var response = await client.PostAsync("/api/transactions/apply-rules", null);
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(0, body.RootElement.GetProperty("changed").GetInt32());
+    }
+
+    [Fact]
+    public async Task ApplyRules_AnotherUsersTransactions_AreNotChanged()
+    {
+        var reader = ReaderWithOneTransaction("zzz finca qqq");
+        using var other = await ClientReadingWithAsync(reader, "luis@example.com");
+        await other.PostAsync("/api/statements", AnyFileUpload());
+        await _client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Restaurants", sign = "Expense" });
+
+        var response = await _client.PostAsync("/api/transactions/apply-rules", null);
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(0, body.RootElement.GetProperty("changed").GetInt32());
+        using var stored = JsonDocument.Parse(await other.GetStringAsync("/api/transactions"));
+        Assert.Equal("Uncategorized", stored.RootElement[0].GetProperty("category").GetString());
+    }
+
     private static StubStatementReader ReaderWithOneTransaction(string description) => new()
     {
         Transactions = [new Transaction(new DateOnly(2025, 1, 10), description, -23.40m, 100m, Bank.Ruralvia)],
