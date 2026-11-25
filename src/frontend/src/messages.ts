@@ -115,6 +115,12 @@ export const statementErrorMessages: Record<StatementError, string> = {
   ProcessingFailed: 'No se pudo procesar el fichero',
 }
 
+export type RulesLoadError = 'RulesLoadFailed'
+
+export const rulesLoadErrorMessages: Record<RulesLoadError, string> = {
+  RulesLoadFailed: 'No se pudieron cargar las reglas',
+}
+
 export const correctionErrorMessages: Record<CorrectionError, string> = {
   CorrectionFailed: 'No se pudo guardar la categoría',
 }

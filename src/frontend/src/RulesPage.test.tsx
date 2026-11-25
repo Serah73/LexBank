@@ -94,3 +94,16 @@ it('shows no rules when the response is not a list', async () => {
   await screen.findByRole('heading', { name: 'Reglas' })
   await waitFor(() => expect(screen.queryByRole('table')).toBeNull())
 })
+
+it.each([
+  ['the server answers an error', () => Promise.resolve(new Response(null, { status: 500 }))],
+  ['the server is unreachable', () => Promise.reject(new TypeError('Failed to fetch'))],
+])('shows an error and no rules when %s', async (_case, answer) => {
+  window.history.pushState({}, '', '/rules')
+  vi.stubGlobal('fetch', vi.fn(answer))
+
+  render(<App />)
+
+  expect((await screen.findByRole('alert')).textContent).toBe('No se pudieron cargar las reglas')
+  expect(screen.queryByRole('table')).toBeNull()
+})
