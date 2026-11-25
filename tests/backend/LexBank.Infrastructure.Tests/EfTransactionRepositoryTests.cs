@@ -141,24 +141,6 @@ public class EfTransactionRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task UpdateAsync_TransactionWithAnotherRule_StoresTheNewRule()
-    {
-        var repository = new EfTransactionRepository(_context);
-        var rules = await new EfRuleRepository(_context).ListAsync();
-        var oldRule = rules.Single(r => r.Pattern == "*mercadona*");
-        var newRule = rules.First(r => r.Id != oldRule.Id);
-        await repository.AddAsync(Email,
-        [
-            new Transaction(new DateOnly(2025, 1, 10), "COMPRA MERCADONA", -10.00m, 100.00m, Bank.Ruralvia, Category.Groceries) { Rule = oldRule },
-        ]);
-        var stored = (await repository.ListAsync(Email)).Single();
-
-        await repository.UpdateAsync(Email, stored with { Rule = newRule });
-
-        Assert.Equal(newRule.Id, (await repository.ListAsync(Email)).Single().Rule!.Id);
-    }
-
-    [Fact]
     public async Task TryUpdateCategorizationAsync_TransactionUnchangedSinceItWasRead_StoresTheCategoryAndTheRule()
     {
         var repository = new EfTransactionRepository(_context);
