@@ -15,8 +15,9 @@ public class ApplyRules(ITransactionRepository repository, IRuleRepository ruleR
             var category = transaction.Corrected ? transaction.Category : categorization.Category;
             if (category == transaction.Category && categorization.Rule?.Id == transaction.Rule?.Id) continue;
 
-            await repository.UpdateAsync(email, transaction with { Category = category, Rule = categorization.Rule });
-            if (category != transaction.Category) changed++;
+            // A transaction corrected while the rules are applied is left as the user set it.
+            var updated = await repository.TryUpdateCategorizationAsync(email, transaction, category, categorization.Rule);
+            if (updated && category != transaction.Category) changed++;
         }
 
         return changed;

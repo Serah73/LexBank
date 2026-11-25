@@ -26,7 +26,10 @@ interface FailedRow {
 // Resolves to null when there is no session (the API answers 401).
 async function fetchStoredTransactions(): Promise<Transaction[] | null> {
   const response = await fetch('/api/transactions')
-  return response.status === 401 ? null : response.json()
+  if (response.status === 401) return null
+  const stored = response.ok ? await response.json() : null
+  if (!Array.isArray(stored)) throw new Error('The transactions were not loaded')
+  return stored
 }
 
 function TransactionsPage() {
@@ -65,6 +68,7 @@ function TransactionsPage() {
     if (!file) return
     event.target.value = ''
     setApplied(null)
+    setApplyError(null)
     setCorrectionError(null)
     setOffer(null)
 
@@ -93,6 +97,7 @@ function TransactionsPage() {
 
   async function handleCategoryChange(id: number, category: Category) {
     setApplied(null)
+    setApplyError(null)
     setCorrectionError(null)
     setOffer(null)
     try {
@@ -127,10 +132,20 @@ function TransactionsPage() {
       const result = await response.json()
       if (!response.ok || !Number.isInteger(result?.changed)) throw new Error('The rules were not applied')
       setApplied(result.changed)
-      const stored = await fetchStoredTransactions()
-      if (stored) setTransactions(stored)
     } catch {
       setApplyError('ApplyRulesFailed')
+      return
+    }
+    await reloadTransactions()
+  }
+
+  async function reloadTransactions() {
+    try {
+      const stored = await fetchStoredTransactions()
+      if (stored === null) navigate('/login', { replace: true })
+      else setTransactions(stored)
+    } catch {
+      setApplyError('ReloadFailed')
     }
   }
 
