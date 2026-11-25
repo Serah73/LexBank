@@ -5,6 +5,7 @@ import App from './App'
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  window.history.pushState({}, '', '/')
 })
 
 function uploadFile(container: HTMLElement) {
@@ -56,6 +57,17 @@ it('shows the log-in form when there is no session', async () => {
 
   await screen.findByRole('form', { name: 'Iniciar sesión' })
   expect(container.querySelector('input[type="file"]')).toBeNull()
+  expect(window.location.pathname).toBe('/login')
+})
+
+it('lands on the log-in page when opening a page without a session', async () => {
+  window.history.pushState({}, '', '/transactions')
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 401 })))
+
+  render(<App />)
+
+  await screen.findByRole('form', { name: 'Iniciar sesión' })
+  expect(window.location.pathname).toBe('/login')
 })
 
 it('shows the importer and the stored transactions when there is a session', async () => {
@@ -95,6 +107,7 @@ it('shows the importer after logging in', async () => {
   await screen.findByRole('table')
   expect(container.querySelector('input[type="file"]')).not.toBeNull()
   expect(screen.queryByRole('form', { name: 'Iniciar sesión' })).toBeNull()
+  expect(window.location.pathname).toBe('/transactions')
   const [, init] = fetchMock.mock.calls.find(([url]) => url === '/api/session')!
   expect(new Headers(init?.headers).get('Content-Type')).toBe('application/json')
   expect(JSON.parse(init?.body as string)).toEqual({ email: 'ana@example.com', password: 'a-long-password' })
@@ -166,6 +179,7 @@ it('shows the log-in form after logging out', async () => {
   await screen.findByRole('form', { name: 'Iniciar sesión' })
   expect(screen.queryByRole('table')).toBeNull()
   expect(container.querySelector('input[type="file"]')).toBeNull()
+  expect(window.location.pathname).toBe('/login')
   const [url] = fetchMock.mock.calls.find(([, init]) => init?.method === 'DELETE')!
   expect(url).toBe('/api/session')
 })

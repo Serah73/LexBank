@@ -120,6 +120,7 @@ Detailed instructions for each part:
 | [0005](docs/adr/0005-vitest-for-frontend-tests.md) | Use Vitest for frontend tests |
 | [0006](docs/adr/0006-localdb-for-database-tests.md) | Test the database layer against SQL Server LocalDB |
 | [0007](docs/adr/0007-cookie-authentication.md) | Cookie authentication |
+| [0008](docs/adr/0008-react-router-for-navigation.md) | Use React Router for navigation |
 
 ## Project status
 
