@@ -11,7 +11,7 @@ It is intended for family use, run locally, not as a public service.
 ## Stack
 
 - Backend: ASP.NET Core 8, EF Core, SQL Server, REST API.
-- Frontend: React + TypeScript (Vite, Vitest). Planned, not installed yet: shadcn/ui, Tailwind CSS, Recharts.
+- Frontend: React + TypeScript (Vite, Vitest, React Router). Planned, not installed yet: shadcn/ui, Tailwind CSS, Recharts.
 - Practices: Clean Architecture (Domain, Application, Infrastructure, Api), TDD, ADRs under `docs/adr`, monorepo.
 
 ## Expensive decisions

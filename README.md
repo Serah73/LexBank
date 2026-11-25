@@ -64,7 +64,7 @@ flowchart LR
 | Area | Technologies |
 |---|---|
 | Backend | ASP.NET Core 8, EF Core 8, SQL Server, ClosedXML |
-| Frontend | React 19, TypeScript, Vite |
+| Frontend | React 19, TypeScript, Vite, React Router |
 | Frontend (planned) | shadcn/ui, Tailwind CSS, Recharts |
 | Testing | xUnit (backend), Vitest and React Testing Library (frontend) |
 | Tooling | GitHub Actions, oxlint |
@@ -143,7 +143,8 @@ The project is under active development.
 | Correction of the category of a transaction | Implemented |
 | Creation of a rule from a correction | Implemented |
 | Replacement of the category of an existing rule | Implemented |
-| Viewing, editing and deleting rules | Planned |
+| Viewing the list of rules, ordered by which one wins first | Implemented |
+| Editing and deleting rules | Planned |
 | Accuracy measurement and spending charts | Planned |
 | Spanish and English user interface | Planned (Spanish only for now) |
 | Visual design with light and dark themes | Planned |
