@@ -114,24 +114,9 @@ function TransactionsPage() {
     }
   }
 
-  async function handleLogOut() {
-    await fetch('/api/session', { method: 'DELETE' })
-    uploaded.current = false
-    setTransactions([])
-    setFailedRows([])
-    setSkipped(0)
-    setError(null)
-    setCorrectionError(null)
-    setOffer(null)
-    navigate('/login')
-  }
-
   return (
     <main>
       <h1>LexBank</h1>
-      <button type="button" onClick={handleLogOut}>
-        Cerrar sesión
-      </button>
       <input type="file" accept=".xlsx,.csv" onChange={handleFileChange} />
       {error && <p role="alert">{statementErrorMessages[error]}</p>}
       {correctionError && <p role="alert">{correctionErrorMessages[correctionError]}</p>}

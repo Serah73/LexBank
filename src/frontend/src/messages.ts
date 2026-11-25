@@ -82,7 +82,7 @@ export const ruleSignNames: Record<RuleSign, string> = {
 }
 
 // A "*" at the start or the end of a pattern relaxes that side of the whole-word match.
-export function describeRule({ pattern, sign }: Rule): string {
+export function describeRule({ pattern, sign }: Pick<Rule, 'pattern' | 'sign'>): string {
   const word = pattern.replace(/^\*|\*$/g, '')
   const startsOpen = pattern.startsWith('*')
   const endsOpen = pattern.endsWith('*')
