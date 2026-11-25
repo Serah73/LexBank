@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { useNavigate } from 'react-router'
-import { applyRulesErrorMessages, bankNames, categoryNames, correctionErrorMessages, describeRule, failedRowMessages, statementErrorMessages } from './messages'
+import { applyRulesErrorMessages, bankNames, categoryNames, correctionErrorMessages, describeAppliedRules, describeRule,failedRowMessages, statementErrorMessages } from './messages'
 import type { ApplyRulesError, Bank, Category, CorrectionError, FailedRowReason, Rule, StatementError } from './messages'
 import RuleOfferForm from './RuleOfferForm'
 import type { RuleOffer } from './RuleOfferForm'
@@ -64,6 +64,7 @@ function TransactionsPage() {
     const file = event.target.files?.[0]
     if (!file) return
     event.target.value = ''
+    setApplied(null)
     setCorrectionError(null)
     setOffer(null)
 
@@ -91,6 +92,7 @@ function TransactionsPage() {
   }
 
   async function handleCategoryChange(id: number, category: Category) {
+    setApplied(null)
     setCorrectionError(null)
     setOffer(null)
     try {
@@ -139,7 +141,7 @@ function TransactionsPage() {
       <button type="button" onClick={handleApplyRules}>
         Aplicar reglas
       </button>
-      {applied !== null && <p role="status">Reglas aplicadas: {applied} movimientos cambiaron de categoría</p>}
+      {applied !== null && <p role="status">{describeAppliedRules(applied)}</p>}
       {applyError && <p role="alert">{applyRulesErrorMessages[applyError]}</p>}
       {error && <p role="alert">{statementErrorMessages[error]}</p>}
       {correctionError && <p role="alert">{correctionErrorMessages[correctionError]}</p>}

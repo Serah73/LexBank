@@ -1136,3 +1136,41 @@ it.each([
   expect((await screen.findByRole('alert')).textContent).toBe('No se pudieron aplicar las reglas')
   expect(screen.queryByRole('status')).toBeNull()
 })
+
+async function applyRulesAndWaitForTheMessage() {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string, init?: RequestInit) => {
+      if (url === '/api/transactions/apply-rules') return Promise.resolve(Response.json({ changed: 1 }))
+      if (url === '/api/statements') return Promise.resolve(Response.json({ transactions: [], failedRows: [], skippedTransactions: 0 }))
+      return Promise.resolve(Response.json(init?.method === 'PUT' ? storedTransaction({ category: 'Health' }) : [storedTransaction()]))
+    }),
+  )
+  const rendered = render(<App />)
+  await screen.findByRole('table')
+  fireEvent.click(screen.getByRole('button', { name: 'Aplicar reglas' }))
+  await screen.findByRole('status')
+  return rendered
+}
+
+it('uses the singular when applying the rules changes one transaction', async () => {
+  await applyRulesAndWaitForTheMessage()
+
+  expect(screen.getByRole('status').textContent).toBe('Reglas aplicadas: 1 movimiento cambió de categoría')
+})
+
+it('removes the applied rules message when a statement is uploaded', async () => {
+  const { container } = await applyRulesAndWaitForTheMessage()
+
+  uploadFile(container)
+
+  await waitFor(() => expect(screen.queryByRole('status')).toBeNull())
+})
+
+it('removes the applied rules message when a category is corrected', async () => {
+  await applyRulesAndWaitForTheMessage()
+
+  fireEvent.change(screen.getByRole('combobox', { name: 'Categoría de COMPRA' }), { target: { value: 'Health' } })
+
+  expect(screen.queryByText(/Reglas aplicadas/)).toBeNull()
+})

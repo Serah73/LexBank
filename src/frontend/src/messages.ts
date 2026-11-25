@@ -121,6 +121,11 @@ export const applyRulesErrorMessages: Record<ApplyRulesError, string> = {
   ApplyRulesFailed: 'No se pudieron aplicar las reglas',
 }
 
+export function describeAppliedRules(changed: number): string {
+  const result = changed === 1 ? 'movimiento cambió' : 'movimientos cambiaron'
+  return `Reglas aplicadas: ${changed} ${result} de categoría`
+}
+
 export type RulesLoadError = 'RulesLoadFailed'
 
 export const rulesLoadErrorMessages: Record<RulesLoadError, string> = {
