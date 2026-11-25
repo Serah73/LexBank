@@ -203,6 +203,46 @@ public class RulesEndpointTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetRules_WithoutSession_ReturnsUnauthorized()
+    {
+        using var anonymous = _factory.CreateClient();
+
+        var response = await anonymous.GetAsync("/api/rules");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetRules_LoggedIn_ReturnsRulesWithTheWinningOneFirst()
+    {
+        await _client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Restaurants", sign = "Expense" });
+        await _client.PostAsJsonAsync("/api/rules", new { pattern = "bodega", category = "Groceries", sign = "Expense" });
+
+        var response = await _client.GetAsync("/api/rules");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var patterns = body.RootElement.EnumerateArray().Select(r => r.GetProperty("pattern").GetString()).ToList();
+        Assert.Equal(["bodega", "finca"], patterns.Take(2));
+        Assert.True(patterns.Count > 2);
+    }
+
+    [Fact]
+    public async Task GetRules_LoggedIn_ReturnsPatternSignAndCategoryWithoutPriority()
+    {
+        await _client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Restaurants", sign = "Expense" });
+
+        var response = await _client.GetAsync("/api/rules");
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var first = body.RootElement[0];
+        Assert.Equal(["category", "pattern", "sign"], first.EnumerateObject().Select(p => p.Name).Order());
+        Assert.Equal("finca", first.GetProperty("pattern").GetString());
+        Assert.Equal("Restaurants", first.GetProperty("category").GetString());
+        Assert.Equal("Expense", first.GetProperty("sign").GetString());
+    }
+
+    [Fact]
     public async Task CreateRule_PatternLongerThanTheMaximum_ReturnsBadRequestWithInvalidRulePattern()
     {
         var response = await _client.PostAsJsonAsync("/api/rules", new { pattern = new string('a', 101), category = "Restaurants", sign = "Expense" });

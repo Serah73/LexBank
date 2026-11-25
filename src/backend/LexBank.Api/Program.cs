@@ -95,6 +95,9 @@ app.MapPut("/api/transactions/{id:int}/category", async (int id, CorrectCategory
     }
 }).RequireAuthorization();
 
+app.MapGet("/api/rules", async (IRuleRepository repository) =>
+    Results.Ok((await repository.ListAsync()).Select(r => new RuleResponse(r.Pattern, r.Sign, r.Category)))).RequireAuthorization();
+
 app.MapPost("/api/rules", async (CreateRuleRequest request, CreateRule createRule) =>
 {
     if (request.Category is null or Category.Uncategorized || request.Sign is null) return Results.BadRequest();
@@ -182,5 +185,7 @@ public record ChangeRuleCategoryRequest(Category? Category);
 public record CreateRuleRequest(string? Pattern, Category? Category, AmountSign? Sign);
 
 public record LogInRequest(string? Email, string? Password);
+
+public record RuleResponse(string Pattern, AmountSign Sign, Category Category);
 
 public partial class Program { }
