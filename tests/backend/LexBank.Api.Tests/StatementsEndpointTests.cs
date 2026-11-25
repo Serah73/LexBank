@@ -826,6 +826,21 @@ public class StatementsEndpointTests : IAsyncLifetime
         Assert.Equal("Uncategorized", stored.RootElement[0].GetProperty("category").GetString());
     }
 
+    [Fact]
+    public async Task CorrectCategory_UndefinedCategorySentAsText_ReturnsBadRequestAndChangesNothing()
+    {
+        using var client = await ClientReadingWithAsync(ReaderWithOneTransaction("zzz finca qqq"));
+        var upload = await client.PostAsync("/api/statements", AnyFileUpload());
+        using var uploaded = JsonDocument.Parse(await upload.Content.ReadAsStringAsync());
+        var id = uploaded.RootElement.GetProperty("transactions")[0].GetProperty("id").GetInt32();
+
+        var response = await client.PutAsJsonAsync($"/api/transactions/{id}/category", new { category = "999" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var stored = JsonDocument.Parse(await client.GetStringAsync("/api/transactions"));
+        Assert.Equal("Uncategorized", stored.RootElement[0].GetProperty("category").GetString());
+    }
+
     private static StubStatementReader ReaderWithOneTransaction(string description) => new()
     {
         Transactions = [new Transaction(new DateOnly(2025, 1, 10), description, -23.40m, 100m, Bank.Ruralvia)],

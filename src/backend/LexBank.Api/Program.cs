@@ -88,7 +88,8 @@ app.MapPost("/api/transactions/apply-rules", async (ClaimsPrincipal user, ApplyR
 
 app.MapPut("/api/transactions/{id:int}/category", async (int id, CorrectCategoryRequest request, ClaimsPrincipal user, CorrectCategory correctCategory) =>
 {
-    if (request.Category is null) return Results.BadRequest();
+    // The converter rejects numbers, but not a number sent as text: only defined values are accepted.
+    if (request.Category is null || !Enum.IsDefined(request.Category.Value)) return Results.BadRequest();
     try
     {
         return Results.Ok(await correctCategory.ExecuteAsync(user.FindFirstValue(ClaimTypes.Email)!, id, request.Category.Value));
@@ -104,7 +105,8 @@ app.MapGet("/api/rules", async (IRuleRepository repository) =>
 
 app.MapPost("/api/rules", async (CreateRuleRequest request, CreateRule createRule) =>
 {
-    if (request.Category is null or Category.Uncategorized || request.Sign is null) return Results.BadRequest();
+    if (request.Category is null or Category.Uncategorized || !Enum.IsDefined(request.Category.Value)
+        || request.Sign is null || !Enum.IsDefined(request.Sign.Value)) return Results.BadRequest();
     try
     {
         return Results.Created((string?)null, await createRule.ExecuteAsync(request.Pattern ?? string.Empty, request.Category.Value, request.Sign.Value));
@@ -121,7 +123,7 @@ app.MapPost("/api/rules", async (CreateRuleRequest request, CreateRule createRul
 
 app.MapPut("/api/rules/{id:int}/category", async (int id, ChangeRuleCategoryRequest request, ChangeRuleCategory changeRuleCategory) =>
 {
-    if (request.Category is null or Category.Uncategorized) return Results.BadRequest();
+    if (request.Category is null or Category.Uncategorized || !Enum.IsDefined(request.Category.Value)) return Results.BadRequest();
     try
     {
         return Results.Ok(await changeRuleCategory.ExecuteAsync(id, request.Category.Value));

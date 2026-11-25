@@ -242,6 +242,32 @@ public class RulesEndpointTests : IAsyncLifetime
         Assert.Equal("Expense", first.GetProperty("sign").GetString());
     }
 
+    [Theory]
+    [InlineData("999", "Expense")]
+    [InlineData("Restaurants", "999")]
+    public async Task CreateRule_UndefinedValueSentAsText_ReturnsBadRequestAndCreatesNothing(string category, string sign)
+    {
+        var response = await _client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category, sign });
+        var next = await _client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Restaurants", sign = "Expense" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, next.StatusCode);
+    }
+
+    [Fact]
+    public async Task ChangeRuleCategory_UndefinedCategorySentAsText_ReturnsBadRequestAndKeepsTheCategory()
+    {
+        var created = await _client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Restaurants", sign = "Expense" });
+        using var rule = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
+
+        var response = await _client.PutAsJsonAsync($"/api/rules/{rule.RootElement.GetProperty("id").GetInt32()}/category", new { category = "999" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var duplicate = await _client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Health", sign = "Expense" });
+        using var body = JsonDocument.Parse(await duplicate.Content.ReadAsStringAsync());
+        Assert.Equal("Restaurants", body.RootElement.GetProperty("rule").GetProperty("category").GetString());
+    }
+
     [Fact]
     public async Task CreateRule_PatternLongerThanTheMaximum_ReturnsBadRequestWithInvalidRulePattern()
     {
