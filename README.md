@@ -143,6 +143,7 @@ The project is under active development.
 | Correction of the category of a transaction | Implemented |
 | Creation of a rule from a correction | Implemented |
 | Replacement of the category of an existing rule | Implemented |
+| Application of the current rules to the saved transactions, keeping the user's corrections | Implemented |
 | Viewing the list of rules, ordered by which one wins first | Implemented |
 | Editing and deleting rules | Planned |
 | Accuracy measurement and spending charts | Planned |
