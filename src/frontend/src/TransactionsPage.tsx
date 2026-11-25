@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { useNavigate } from 'react-router'
-import { bankNames, categoryNames, correctionErrorMessages, describeRule, failedRowMessages, statementErrorMessages } from './messages'
-import type { Bank, Category, CorrectionError, FailedRowReason, Rule, StatementError } from './messages'
+import { applyRulesErrorMessages, bankNames, categoryNames, correctionErrorMessages, describeRule, failedRowMessages, statementErrorMessages } from './messages'
+import type { ApplyRulesError, Bank, Category, CorrectionError, FailedRowReason, Rule, StatementError } from './messages'
 import RuleOfferForm from './RuleOfferForm'
 import type { RuleOffer } from './RuleOfferForm'
 
@@ -37,6 +37,9 @@ function TransactionsPage() {
   const [skipped, setSkipped] = useState(0)
   const [offer, setOffer] = useState<{ id: number } & RuleOffer | null>(null)
   const [correctionError, setCorrectionError] = useState<CorrectionError | null>(null)
+
+  const [applied, setApplied] = useState<number | null>(null)
+  const [applyError, setApplyError] = useState<ApplyRulesError | null>(null)
 
   const uploaded = useRef(false)
 
@@ -114,10 +117,30 @@ function TransactionsPage() {
     }
   }
 
+  async function handleApplyRules() {
+    setApplied(null)
+    setApplyError(null)
+    try {
+      const response = await fetch('/api/transactions/apply-rules', { method: 'POST' })
+      const result = await response.json()
+      if (!response.ok || !Number.isInteger(result?.changed)) throw new Error('The rules were not applied')
+      setApplied(result.changed)
+      const stored = await fetchStoredTransactions()
+      if (stored) setTransactions(stored)
+    } catch {
+      setApplyError('ApplyRulesFailed')
+    }
+  }
+
   return (
     <main>
       <h1>LexBank</h1>
       <input type="file" accept=".xlsx,.csv" onChange={handleFileChange} />
+      <button type="button" onClick={handleApplyRules}>
+        Aplicar reglas
+      </button>
+      {applied !== null && <p role="status">Reglas aplicadas: {applied} movimientos cambiaron de categoría</p>}
+      {applyError && <p role="alert">{applyRulesErrorMessages[applyError]}</p>}
       {error && <p role="alert">{statementErrorMessages[error]}</p>}
       {correctionError && <p role="alert">{correctionErrorMessages[correctionError]}</p>}
       {offer && <RuleOfferForm key={`${offer.id}-${offer.category}`} offer={offer} onClose={() => setOffer(null)} />}

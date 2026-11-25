@@ -1095,3 +1095,44 @@ it.each([
   expect((await screen.findByRole('alert')).textContent).toBe('No se pudo cambiar la categoría de la regla')
   expect(form.getByRole('button', { name: 'Reemplazar' })).toBeTruthy()
 })
+
+it('applies the rules, shows how many transactions changed and reloads the list', async () => {
+  let applied = false
+  const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+    if (url === '/api/transactions/apply-rules' && init?.method === 'POST') {
+      applied = true
+      return Promise.resolve(Response.json({ changed: 2 }))
+    }
+    return Promise.resolve(Response.json([storedTransaction({ category: applied ? 'Health' : 'Groceries' })]))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  render(<App />)
+  await screen.findByRole('table')
+
+  fireEvent.click(screen.getByRole('button', { name: 'Aplicar reglas' }))
+
+  expect((await screen.findByRole('status')).textContent).toBe('Reglas aplicadas: 2 movimientos cambiaron de categoría')
+  await waitFor(() => expect(cellTexts()).toContain('Salud'))
+})
+
+it.each([
+  ['the server answers an error', () => Promise.resolve(new Response(null, { status: 500 }))],
+  ['the server is unreachable', () => Promise.reject(new TypeError('Failed to fetch'))],
+])('shows a general error when applying the rules fails because %s', async (_case, failure) => {
+  const answers = [() => Promise.resolve(Response.json({ changed: 1 })), failure]
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string) =>
+      url === '/api/transactions/apply-rules' ? answers.shift()!() : Promise.resolve(Response.json([storedTransaction()])),
+    ),
+  )
+  render(<App />)
+  await screen.findByRole('table')
+  fireEvent.click(screen.getByRole('button', { name: 'Aplicar reglas' }))
+  await screen.findByRole('status')
+
+  fireEvent.click(screen.getByRole('button', { name: 'Aplicar reglas' }))
+
+  expect((await screen.findByRole('alert')).textContent).toBe('No se pudieron aplicar las reglas')
+  expect(screen.queryByRole('status')).toBeNull()
+})

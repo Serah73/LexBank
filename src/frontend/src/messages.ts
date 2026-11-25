@@ -115,6 +115,12 @@ export const statementErrorMessages: Record<StatementError, string> = {
   ProcessingFailed: 'No se pudo procesar el fichero',
 }
 
+export type ApplyRulesError = 'ApplyRulesFailed'
+
+export const applyRulesErrorMessages: Record<ApplyRulesError, string> = {
+  ApplyRulesFailed: 'No se pudieron aplicar las reglas',
+}
+
 export type RulesLoadError = 'RulesLoadFailed'
 
 export const rulesLoadErrorMessages: Record<RulesLoadError, string> = {
