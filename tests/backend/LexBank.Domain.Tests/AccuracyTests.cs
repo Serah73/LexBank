@@ -76,42 +76,11 @@ public class AccuracyTests
     }
 
     [Fact]
-    public void From_TransactionsOfSeveralCategories_GroupsHitsAndTotalByFinalCategoryInCategoryOrder()
-    {
-        var accuracy = Accuracy.From(
-        [
-            Categorized(Category.Uncategorized, ruleCategory: null),
-            Categorized(Category.Restaurants, ruleCategory: Category.Restaurants),
-            Categorized(Category.Groceries, ruleCategory: Category.Groceries),
-            Categorized(Category.Restaurants, ruleCategory: null),
-        ]);
-
-        Assert.Equal(
-            [
-                new CategoryAccuracy(Category.Groceries, 1, 1),
-                new CategoryAccuracy(Category.Restaurants, 1, 2),
-                new CategoryAccuracy(Category.Uncategorized, 0, 1),
-            ],
-            accuracy.ByCategory);
-    }
-
-    [Fact]
-    public void From_CorrectedTransaction_CountsInItsNewCategory()
-    {
-        var groceries = Categorized(Category.Groceries, ruleCategory: Category.Groceries);
-
-        var accuracy = Accuracy.From([groceries.Correct(Category.Restaurants)]);
-
-        Assert.Equal([new CategoryAccuracy(Category.Restaurants, 0, 1)], accuracy.ByCategory);
-    }
-
-    [Fact]
     public void From_NoTransactions_ReturnsNoGroups()
     {
         var accuracy = Accuracy.From([]);
 
         Assert.Empty(accuracy.ByBank);
-        Assert.Empty(accuracy.ByCategory);
     }
 
     private static void AssertTotals(int hits, int total, Accuracy accuracy)

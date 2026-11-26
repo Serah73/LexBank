@@ -1343,12 +1343,11 @@ function tableRows(name: string) {
     .map((row) => within(row).getAllByRole('cell').map((cell) => cell.textContent))
 }
 
-it('shows the accuracy by bank and by category with their whole percentages', async () => {
+it('shows the accuracy by bank with whole percentages', async () => {
   const accuracy = {
     hits: 3,
     total: 5,
     byBank: [{ bank: 'Ruralvia', hits: 1, total: 2 }, { bank: 'Revolut', hits: 2, total: 3 }],
-    byCategory: [{ category: 'Groceries', hits: 3, total: 3 }, { category: 'Uncategorized', hits: 0, total: 2 }],
   }
   vi.stubGlobal(
     'fetch',
@@ -1359,25 +1358,23 @@ it('shows the accuracy by bank and by category with their whole percentages', as
   await screen.findByRole('table', { name: 'Por banco' })
 
   expect(tableRows('Por banco')).toEqual([['Ruralvía', '50 % (1 de 2)'], ['Revolut', '67 % (2 de 3)']])
-  expect(tableRows('Por categoría')).toEqual([['Supermercado', '100 % (3 de 3)'], ['Sin categoría', '0 % (0 de 2)']])
 })
 
 it('updates the breakdown from the correction response', async () => {
-  const breakdown = (hits: number, category: string) => ({
+  const breakdown = (hits: number) => ({
     hits,
     total: 1,
     byBank: [{ bank: 'Ruralvia', hits, total: 1 }],
-    byCategory: [{ category, hits, total: 1 }],
   })
   vi.stubGlobal(
     'fetch',
     vi.fn((url: string, init?: RequestInit) => {
       if (init?.method === 'PUT') {
         const transaction = storedTransaction({ category: 'Restaurants', corrected: true })
-        return Promise.resolve(Response.json({ transaction, accuracy: breakdown(0, 'Restaurants') }))
+        return Promise.resolve(Response.json({ transaction, accuracy: breakdown(0) }))
       }
       return Promise.resolve(
-        Response.json(url === '/api/transactions/accuracy' ? breakdown(1, 'Groceries') : [storedTransaction()]),
+        Response.json(url === '/api/transactions/accuracy' ? breakdown(1) : [storedTransaction()]),
       )
     }),
   )
@@ -1386,12 +1383,11 @@ it('updates the breakdown from the correction response', async () => {
 
   await correctTo('Restaurants', 'COMPRA')
 
-  await waitFor(() => expect(tableRows('Por categoría')).toEqual([['Restaurantes', '0 % (0 de 1)']]))
-  expect(tableRows('Por banco')).toEqual([['Ruralvía', '0 % (0 de 1)']])
+  await waitFor(() => expect(tableRows('Por banco')).toEqual([['Ruralvía', '0 % (0 de 1)']]))
 })
 
 it('shows no breakdown when there are no transactions', async () => {
-  const readAccuracy = vi.fn(() => Promise.resolve({ hits: 0, total: 0, byBank: [], byCategory: [] }))
+  const readAccuracy = vi.fn(() => Promise.resolve({ hits: 0, total: 0, byBank: [] }))
   vi.stubGlobal(
     'fetch',
     vi.fn((url: string) =>

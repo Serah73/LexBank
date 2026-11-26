@@ -25,7 +25,6 @@ interface Hits {
 
 interface Accuracy extends Hits {
   byBank?: (Hits & { bank: Bank })[]
-  byCategory?: (Hits & { category: Category })[]
 }
 
 interface FailedRow {
@@ -52,20 +51,20 @@ async function fetchAccuracy(): Promise<Accuracy | null> {
   return toAccuracy(response.ok ? await response.json() : null)
 }
 
-function BreakdownTable({ title, heading, groups }: { title: string; heading: string; groups: (Hits & { name: string })[] }) {
+function BankAccuracyTable({ banks }: { banks: NonNullable<Accuracy['byBank']> }) {
   return (
     <table>
-      <caption>{title}</caption>
+      <caption>Por banco</caption>
       <thead>
         <tr>
-          <th>{heading}</th>
+          <th>Banco</th>
           <th>Aciertos</th>
         </tr>
       </thead>
       <tbody>
-        {groups.map((group) => (
-          <tr key={group.name}>
-            <td>{group.name}</td>
+        {banks.map((group) => (
+          <tr key={group.bank}>
+            <td>{bankNames[group.bank]}</td>
             <td>{describeHits(group.hits, group.total)}</td>
           </tr>
         ))}
@@ -218,16 +217,7 @@ function TransactionsPage() {
       {accuracy && accuracy.total > 0 && (
         <>
           <p>{describeAccuracy(accuracy.hits, accuracy.total)}</p>
-          {Array.isArray(accuracy.byBank) && (
-            <BreakdownTable title="Por banco" heading="Banco"
-              groups={accuracy.byBank.map((g) => ({ ...g, name: bankNames[g.bank] }))}
-            />
-          )}
-          {Array.isArray(accuracy.byCategory) && (
-            <BreakdownTable title="Por categoría" heading="Categoría"
-              groups={accuracy.byCategory.map((g) => ({ ...g, name: categoryNames[g.category] }))}
-            />
-          )}
+          {Array.isArray(accuracy.byBank) && <BankAccuracyTable banks={accuracy.byBank} />}
         </>
       )}
       {transactions.length > 0 && (
