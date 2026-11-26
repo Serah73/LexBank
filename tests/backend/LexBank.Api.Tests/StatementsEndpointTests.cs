@@ -927,6 +927,52 @@ public class StatementsEndpointTests : IAsyncLifetime
         Assert.Equal(2, body.RootElement.GetProperty("accuracy").GetProperty("total").GetInt32());
     }
 
+    [Fact]
+    public async Task GetAccuracy_StoredTransactions_ReturnsTheBreakdownOfTheSessionUserOnly()
+    {
+        var otherReader = new StubStatementReader
+        {
+            Transactions = [new Transaction(new DateOnly(2025, 1, 9), "tj-mercadona finca espana", -5m, 50m, Bank.Revolut)],
+        };
+        using var other = await ClientReadingWithAsync(otherReader, "luis@example.com");
+        await other.PostAsync("/api/statements", AnyFileUpload());
+        var reader = new StubStatementReader
+        {
+            Transactions =
+            [
+                new Transaction(new DateOnly(2025, 1, 10), "tj-mercadona finca espana", -23.40m, 100m, Bank.Ruralvia),
+                new Transaction(new DateOnly(2025, 1, 11), "zzz finca qqq", -10m, 90m, Bank.Ruralvia),
+            ],
+        };
+        using var client = await ClientReadingWithAsync(reader);
+        await client.PostAsync("/api/statements", AnyFileUpload());
+
+        using var body = JsonDocument.Parse(await client.GetStringAsync("/api/transactions/accuracy"));
+
+        Assert.Equal(["Ruralvia 1/2"], Groups(body.RootElement, "byBank", "bank"));
+        Assert.Equal(["Groceries 1/1", "Uncategorized 0/1"], Groups(body.RootElement, "byCategory", "category"));
+    }
+
+    [Fact]
+    public async Task CorrectCategory_Saved_ReturnsTheBreakdownAfterTheChange()
+    {
+        var (client, _, id) = await ClientWithOneTransactionAsync();
+        using var _client = client;
+
+        var response = await client.PutAsJsonAsync($"/api/transactions/{id}/category", new { category = "Restaurants" });
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var accuracy = body.RootElement.GetProperty("accuracy");
+        Assert.Equal(["Ruralvia 0/1"], Groups(accuracy, "byBank", "bank"));
+        Assert.Equal(["Restaurants 0/1"], Groups(accuracy, "byCategory", "category"));
+    }
+
+    // Each group of a breakdown as "code hits/total".
+    private static IEnumerable<string> Groups(JsonElement accuracy, string breakdown, string code) =>
+        accuracy.GetProperty(breakdown).EnumerateArray()
+            .Select(g => $"{g.GetProperty(code).GetString()} {g.GetProperty("hits").GetInt32()}/{g.GetProperty("total").GetInt32()}")
+            .ToList();
+
     private static StubStatementReader ReaderWithOneTransaction(string description) => new()
     {
         Transactions = [new Transaction(new DateOnly(2025, 1, 10), description, -23.40m, 100m, Bank.Ruralvia)],
