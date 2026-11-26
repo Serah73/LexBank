@@ -936,7 +936,7 @@ async function submitRule(createRule: () => Promise<Response>) {
 }
 
 it.each([
-  ['InvalidRulePattern', 400, 'El patrón no es válido: necesita una palabra y como mucho un «*» en cada extremo'],
+  ['InvalidRulePattern', 400, 'El patrón no es válido: necesita una letra o un número, como mucho 100 caracteres y un «*» en cada extremo'],
   ['RuleAlreadyExists', 409, 'Ya existe una regla con ese patrón y ese signo'],
 ])('shows the %s error under the pattern field and keeps the offer open', async (error, status, message) => {
   const form = await submitRule(() => Promise.resolve(Response.json({ error }, { status })))
@@ -1320,4 +1320,17 @@ it('updates the accuracy from the upload response', async () => {
 
   expect(await screen.findByText('Aciertos del motor: 50 % (1 de 2)')).toBeTruthy()
   expect(fetchMock.mock.calls.filter(([url]) => url === '/api/transactions/accuracy')).toHaveLength(1)
+})
+
+it.each([
+  ['cutting a word', `${'PALABRA '.repeat(12)}SUPERMERCADO`, 'PALABRA '.repeat(12).trim()],
+  ['ending a word at the limit', `${'A'.repeat(94)} FINCA MADRID`, `${'A'.repeat(94)} FINCA`],
+])('suggests a pattern of at most 100 characters made of whole words when %s', async (_case, description, expected) => {
+  stubRules(() => Promise.reject(new Error('no rule expected')), [storedTransaction({ description })])
+  render(<App />)
+
+  await correctTo('Restaurants', description)
+
+  const form = within(await ruleForm())
+  expect((form.getByRole('textbox', { name: 'Patrón' }) as HTMLInputElement).value).toBe(expected)
 })

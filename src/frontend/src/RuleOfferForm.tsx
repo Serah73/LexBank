@@ -9,13 +9,23 @@ export interface RuleOffer {
   sign: RuleSign
 }
 
+// The longest pattern the API accepts.
+const maxPatternLength = 100
+
+// A pattern matches whole words, so a word cut by the limit is left out of the suggestion.
+function suggestPattern(description: string) {
+  const cut = description.slice(0, maxPatternLength)
+  const splitsAWord = /^[\p{L}\p{N}]/u.test(description.slice(maxPatternLength))
+  return (splitsAWord ? cut.replace(/[\p{L}\p{N}]+$/u, '') : cut).trim()
+}
+
 function isRule(value: unknown): value is Rule {
   const rule = value as Rule | null
   return typeof rule?.id === 'number' && Object.hasOwn(categoryNames, rule.category)
 }
 
 function RuleOfferForm({ offer, onClose }: { offer: RuleOffer; onClose: () => void }) {
-  const [pattern, setPattern] = useState(offer.description)
+  const [pattern, setPattern] = useState(() => suggestPattern(offer.description))
   const [ruleError, setRuleError] = useState<RuleError | null>(null)
   const [existing, setExisting] = useState<Rule | null>(null)
 

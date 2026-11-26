@@ -138,7 +138,7 @@ export const correctionErrorMessages: Record<CorrectionError, string> = {
 }
 
 export const ruleErrorMessages: Record<RuleError, string> = {
-  InvalidRulePattern: 'El patrón no es válido: necesita una palabra y como mucho un «*» en cada extremo',
+  InvalidRulePattern: 'El patrón no es válido: necesita una letra o un número, como mucho 100 caracteres y un «*» en cada extremo',
   RuleAlreadyExists: 'Ya existe una regla con ese patrón y ese signo',
   RuleCreationFailed: 'No se pudo crear la regla',
   RuleUpdateFailed: 'No se pudo cambiar la categoría de la regla',
