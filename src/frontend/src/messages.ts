@@ -144,6 +144,10 @@ export const ruleErrorMessages: Record<RuleError, string> = {
   RuleUpdateFailed: 'No se pudo cambiar la categoría de la regla',
 }
 
+export function describeHits(hits: number, total: number) {
+  return `${Math.round((hits / total) * 100)} % (${hits} de ${total})`
+}
+
 export function describeAccuracy(hits: number, total: number) {
-  return `Aciertos del motor: ${Math.round((hits / total) * 100)} % (${hits} de ${total})`
+  return `Aciertos del motor: ${describeHits(hits, total)}`
 }

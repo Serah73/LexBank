@@ -1334,3 +1334,73 @@ it.each([
   const form = within(await ruleForm())
   expect((form.getByRole('textbox', { name: 'Patrón' }) as HTMLInputElement).value).toBe(expected)
 })
+
+// Cells of each body row of the table with that name.
+function tableRows(name: string) {
+  return within(screen.getByRole('table', { name }))
+    .getAllByRole('row')
+    .slice(1)
+    .map((row) => within(row).getAllByRole('cell').map((cell) => cell.textContent))
+}
+
+it('shows the accuracy by bank and by category with their whole percentages', async () => {
+  const accuracy = {
+    hits: 3,
+    total: 5,
+    byBank: [{ bank: 'Ruralvia', hits: 1, total: 2 }, { bank: 'Revolut', hits: 2, total: 3 }],
+    byCategory: [{ category: 'Groceries', hits: 3, total: 3 }, { category: 'Uncategorized', hits: 0, total: 2 }],
+  }
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string) => Promise.resolve(Response.json(url === '/api/transactions/accuracy' ? accuracy : [storedTransaction()]))),
+  )
+  render(<App />)
+
+  await screen.findByRole('table', { name: 'Por banco' })
+
+  expect(tableRows('Por banco')).toEqual([['Ruralvía', '50 % (1 de 2)'], ['Revolut', '67 % (2 de 3)']])
+  expect(tableRows('Por categoría')).toEqual([['Supermercado', '100 % (3 de 3)'], ['Sin categoría', '0 % (0 de 2)']])
+})
+
+it('updates the breakdown from the correction response', async () => {
+  const breakdown = (hits: number, category: string) => ({
+    hits,
+    total: 1,
+    byBank: [{ bank: 'Ruralvia', hits, total: 1 }],
+    byCategory: [{ category, hits, total: 1 }],
+  })
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string, init?: RequestInit) => {
+      if (init?.method === 'PUT') {
+        const transaction = storedTransaction({ category: 'Restaurants', corrected: true })
+        return Promise.resolve(Response.json({ transaction, accuracy: breakdown(0, 'Restaurants') }))
+      }
+      return Promise.resolve(
+        Response.json(url === '/api/transactions/accuracy' ? breakdown(1, 'Groceries') : [storedTransaction()]),
+      )
+    }),
+  )
+  render(<App />)
+  await screen.findByRole('table', { name: 'Por banco' })
+
+  await correctTo('Restaurants', 'COMPRA')
+
+  await waitFor(() => expect(tableRows('Por categoría')).toEqual([['Restaurantes', '0 % (0 de 1)']]))
+  expect(tableRows('Por banco')).toEqual([['Ruralvía', '0 % (0 de 1)']])
+})
+
+it('shows no breakdown when there are no transactions', async () => {
+  const readAccuracy = vi.fn(() => Promise.resolve({ hits: 0, total: 0, byBank: [], byCategory: [] }))
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string) =>
+      Promise.resolve(url === '/api/transactions/accuracy' ? { ok: true, status: 200, json: readAccuracy } : Response.json([])),
+    ),
+  )
+  render(<App />)
+  await waitFor(() => expect(readAccuracy).toHaveBeenCalled())
+  await new Promise((resolve) => setTimeout(resolve))
+
+  expect(screen.queryByRole('table')).toBeNull()
+})
