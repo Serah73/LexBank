@@ -719,7 +719,7 @@ it('shows every category, "Sin categoría" included, in the selector of each tra
     'Salida del ahorro',
     'Movimientos internos',
     'Supermercado',
-    'Restaurantes y cafeterías',
+    'Restaurantes',
     'Ropa',
     'Calzado',
     'Joyería',
@@ -880,7 +880,7 @@ it('offers to create a rule after a correction, with the description as pattern'
 
   const form = within(await ruleForm())
   expect((form.getByRole('textbox', { name: 'Patrón' }) as HTMLInputElement).value).toBe('TJ-MERCADONA FINCA')
-  expect(form.getByText(/Restaurantes y cafeterías/)).toBeTruthy()
+  expect(form.getByText(/Restaurantes/)).toBeTruthy()
   expect(form.getByText(/Gasto/)).toBeTruthy()
 })
 
@@ -1043,7 +1043,7 @@ async function submitRuleThatAlreadyExists(existing: unknown, replaceRule?: () =
 it('asks to replace the category showing the current one when the rule already exists with another category', async () => {
   const { form } = await submitRuleThatAlreadyExists(existingRule)
 
-  await form.findByText(/categorizada como «Supermercado».*¿Reemplazar su categoría por «Restaurantes y cafeterías»\?/)
+  await form.findByText(/categorizada como «Supermercado».*¿Reemplazar su categoría por «Restaurantes»\?/)
   expect(form.getByRole('button', { name: 'Reemplazar' })).toBeTruthy()
   expect(form.getByRole('button', { name: 'No reemplazar' })).toBeTruthy()
   expect(form.queryByText('Ya existe una regla con ese patrón y ese signo')).toBeNull()
@@ -1333,4 +1333,70 @@ it.each([
 
   const form = within(await ruleForm())
   expect((form.getByRole('textbox', { name: 'Patrón' }) as HTMLInputElement).value).toBe(expected)
+})
+
+// Cells of each body row of the table with that name.
+function tableRows(name: string) {
+  return within(screen.getByRole('table', { name }))
+    .getAllByRole('row')
+    .slice(1)
+    .map((row) => within(row).getAllByRole('cell').map((cell) => cell.textContent))
+}
+
+it('shows the accuracy by bank with whole percentages', async () => {
+  const accuracy = {
+    hits: 3,
+    total: 5,
+    byBank: [{ bank: 'Ruralvia', hits: 1, total: 2 }, { bank: 'Revolut', hits: 2, total: 3 }],
+  }
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string) => Promise.resolve(Response.json(url === '/api/transactions/accuracy' ? accuracy : [storedTransaction()]))),
+  )
+  render(<App />)
+
+  await screen.findByRole('table', { name: 'Por banco' })
+
+  expect(tableRows('Por banco')).toEqual([['Ruralvía', '50 % (1 de 2)'], ['Revolut', '67 % (2 de 3)']])
+})
+
+it('updates the breakdown from the correction response', async () => {
+  const breakdown = (hits: number) => ({
+    hits,
+    total: 1,
+    byBank: [{ bank: 'Ruralvia', hits, total: 1 }],
+  })
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string, init?: RequestInit) => {
+      if (init?.method === 'PUT') {
+        const transaction = storedTransaction({ category: 'Restaurants', corrected: true })
+        return Promise.resolve(Response.json({ transaction, accuracy: breakdown(0) }))
+      }
+      return Promise.resolve(
+        Response.json(url === '/api/transactions/accuracy' ? breakdown(1) : [storedTransaction()]),
+      )
+    }),
+  )
+  render(<App />)
+  await screen.findByRole('table', { name: 'Por banco' })
+
+  await correctTo('Restaurants', 'COMPRA')
+
+  await waitFor(() => expect(tableRows('Por banco')).toEqual([['Ruralvía', '0 % (0 de 1)']]))
+})
+
+it('shows no breakdown when there are no transactions', async () => {
+  const readAccuracy = vi.fn(() => Promise.resolve({ hits: 0, total: 0, byBank: [] }))
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string) =>
+      Promise.resolve(url === '/api/transactions/accuracy' ? { ok: true, status: 200, json: readAccuracy } : Response.json([])),
+    ),
+  )
+  render(<App />)
+  await waitFor(() => expect(readAccuracy).toHaveBeenCalled())
+  await new Promise((resolve) => setTimeout(resolve))
+
+  expect(screen.queryByRole('table')).toBeNull()
 })

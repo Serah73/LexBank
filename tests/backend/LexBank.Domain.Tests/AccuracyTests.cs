@@ -7,7 +7,7 @@ public class AccuracyTests
     {
         var accuracy = Accuracy.From([]);
 
-        Assert.Equal(new Accuracy(0, 0), accuracy);
+        AssertTotals(0, 0, accuracy);
     }
 
     [Fact]
@@ -15,7 +15,7 @@ public class AccuracyTests
     {
         var accuracy = Accuracy.From([Categorized(Category.Groceries, ruleCategory: Category.Groceries)]);
 
-        Assert.Equal(new Accuracy(1, 1), accuracy);
+        AssertTotals(1, 1, accuracy);
     }
 
     [Fact]
@@ -28,7 +28,7 @@ public class AccuracyTests
             Categorized(Category.Uncategorized, ruleCategory: null) with { Corrected = true },
         ]);
 
-        Assert.Equal(new Accuracy(0, 3), accuracy);
+        AssertTotals(0, 3, accuracy);
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public class AccuracyTests
     {
         var accuracy = Accuracy.From([Categorized(Category.Restaurants, ruleCategory: Category.Groceries) with { Corrected = true }]);
 
-        Assert.Equal(new Accuracy(0, 1), accuracy);
+        AssertTotals(0, 1, accuracy);
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public class AccuracyTests
     {
         var accuracy = Accuracy.From([Categorized(Category.Groceries, ruleCategory: Category.Groceries) with { Corrected = true }]);
 
-        Assert.Equal(new Accuracy(1, 1), accuracy);
+        AssertTotals(1, 1, accuracy);
     }
 
     [Fact]
@@ -57,7 +57,36 @@ public class AccuracyTests
             Categorized(Category.Uncategorized, ruleCategory: null),
         ]);
 
-        Assert.Equal(new Accuracy(1, 3), accuracy);
+        AssertTotals(1, 3, accuracy);
+    }
+
+    [Fact]
+    public void From_TransactionsOfSeveralBanks_GroupsHitsAndTotalByBankInBankOrder()
+    {
+        var accuracy = Accuracy.From(
+        [
+            Categorized(Category.Groceries, ruleCategory: Category.Groceries) with { Bank = Bank.Revolut },
+            Categorized(Category.Groceries, ruleCategory: Category.Groceries),
+            Categorized(Category.Uncategorized, ruleCategory: null),
+            Categorized(Category.Uncategorized, ruleCategory: null) with { Bank = Bank.Revolut },
+            Categorized(Category.Uncategorized, ruleCategory: null) with { Bank = Bank.Revolut },
+        ]);
+
+        Assert.Equal([new BankAccuracy(Bank.Ruralvia, 1, 2), new BankAccuracy(Bank.Revolut, 1, 3)], accuracy.ByBank);
+    }
+
+    [Fact]
+    public void From_NoTransactions_ReturnsNoGroups()
+    {
+        var accuracy = Accuracy.From([]);
+
+        Assert.Empty(accuracy.ByBank);
+    }
+
+    private static void AssertTotals(int hits, int total, Accuracy accuracy)
+    {
+        Assert.Equal(hits, accuracy.Hits);
+        Assert.Equal(total, accuracy.Total);
     }
 
     private static Transaction Categorized(Category category, Category? ruleCategory) =>

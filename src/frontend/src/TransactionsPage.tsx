@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { useNavigate } from 'react-router'
-import { applyRulesErrorMessages, bankNames, categoryNames, correctionErrorMessages, describeAccuracy, describeAppliedRules, describeRule,failedRowMessages, statementErrorMessages } from './messages'
+import { applyRulesErrorMessages, bankNames, categoryNames, correctionErrorMessages, describeAccuracy, describeAppliedRules, describeHits, describeRule,failedRowMessages, statementErrorMessages } from './messages'
 import type { ApplyRulesError, Bank, Category, CorrectionError, FailedRowReason, Rule, StatementError } from './messages'
 import RuleOfferForm from './RuleOfferForm'
 import type { RuleOffer } from './RuleOfferForm'
@@ -18,9 +18,13 @@ interface Transaction {
   corrected: boolean
 }
 
-interface Accuracy {
+interface Hits {
   hits: number
   total: number
+}
+
+interface Accuracy extends Hits {
+  byBank?: (Hits & { bank: Bank })[]
 }
 
 interface FailedRow {
@@ -45,6 +49,28 @@ function toAccuracy(value: Partial<Accuracy> | null | undefined): Accuracy | nul
 async function fetchAccuracy(): Promise<Accuracy | null> {
   const response = await fetch('/api/transactions/accuracy')
   return toAccuracy(response.ok ? await response.json() : null)
+}
+
+function BankAccuracyTable({ banks }: { banks: NonNullable<Accuracy['byBank']> }) {
+  return (
+    <table>
+      <caption>Por banco</caption>
+      <thead>
+        <tr>
+          <th>Banco</th>
+          <th>Aciertos</th>
+        </tr>
+      </thead>
+      <tbody>
+        {banks.map((group) => (
+          <tr key={group.bank}>
+            <td>{bankNames[group.bank]}</td>
+            <td>{describeHits(group.hits, group.total)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
 }
 
 function TransactionsPage() {
@@ -188,7 +214,12 @@ function TransactionsPage() {
       {correctionError && <p role="alert">{correctionErrorMessages[correctionError]}</p>}
       {offer && <RuleOfferForm key={`${offer.id}-${offer.category}`} offer={offer} onClose={() => setOffer(null)} />}
       {skipped > 0 && <p>Movimientos omitidos por estar ya importados: {skipped}</p>}
-      {accuracy && accuracy.total > 0 && <p>{describeAccuracy(accuracy.hits, accuracy.total)}</p>}
+      {accuracy && accuracy.total > 0 && (
+        <>
+          <p>{describeAccuracy(accuracy.hits, accuracy.total)}</p>
+          {Array.isArray(accuracy.byBank) && <BankAccuracyTable banks={accuracy.byBank} />}
+        </>
+      )}
       {transactions.length > 0 && (
         <table>
           <thead>
