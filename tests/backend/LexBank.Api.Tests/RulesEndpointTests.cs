@@ -55,6 +55,26 @@ public class RulesEndpointTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task CreateRule_PatternWithSurroundingSpaces_StoresItTrimmed()
+    {
+        var response = await _client.PostAsJsonAsync("/api/rules", new { pattern = "  finca ", category = "Restaurants", sign = "Expense" });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("finca", body.RootElement.GetProperty("pattern").GetString());
+    }
+
+    [Fact]
+    public async Task CreateRule_ExistingPatternWithSurroundingSpaces_ReturnsConflict()
+    {
+        await _client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Restaurants", sign = "Expense" });
+
+        var response = await _client.PostAsJsonAsync("/api/rules", new { pattern = "finca ", category = "Health", sign = "Expense" });
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
     public async Task CreateRule_SamePatternAndSignAlreadyExists_ReturnsConflictWithRuleAlreadyExists()
     {
         await _client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Restaurants", sign = "Expense" });
