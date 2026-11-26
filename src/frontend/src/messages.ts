@@ -60,7 +60,7 @@ export const categoryNames: Record<Category, string> = {
   SavingsWithdrawal: 'Salida del ahorro',
   Internal: 'Movimientos internos',
   Groceries: 'Supermercado',
-  Restaurants: 'Restaurantes y cafeterías',
+  Restaurants: 'Restaurantes',
   Clothing: 'Ropa',
   Footwear: 'Calzado',
   Jewelry: 'Joyería',

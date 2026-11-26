@@ -719,7 +719,7 @@ it('shows every category, "Sin categoría" included, in the selector of each tra
     'Salida del ahorro',
     'Movimientos internos',
     'Supermercado',
-    'Restaurantes y cafeterías',
+    'Restaurantes',
     'Ropa',
     'Calzado',
     'Joyería',
@@ -880,7 +880,7 @@ it('offers to create a rule after a correction, with the description as pattern'
 
   const form = within(await ruleForm())
   expect((form.getByRole('textbox', { name: 'Patrón' }) as HTMLInputElement).value).toBe('TJ-MERCADONA FINCA')
-  expect(form.getByText(/Restaurantes y cafeterías/)).toBeTruthy()
+  expect(form.getByText(/Restaurantes/)).toBeTruthy()
   expect(form.getByText(/Gasto/)).toBeTruthy()
 })
 
@@ -1043,7 +1043,7 @@ async function submitRuleThatAlreadyExists(existing: unknown, replaceRule?: () =
 it('asks to replace the category showing the current one when the rule already exists with another category', async () => {
   const { form } = await submitRuleThatAlreadyExists(existingRule)
 
-  await form.findByText(/categorizada como «Supermercado».*¿Reemplazar su categoría por «Restaurantes y cafeterías»\?/)
+  await form.findByText(/categorizada como «Supermercado».*¿Reemplazar su categoría por «Restaurantes»\?/)
   expect(form.getByRole('button', { name: 'Reemplazar' })).toBeTruthy()
   expect(form.getByRole('button', { name: 'No reemplazar' })).toBeTruthy()
   expect(form.queryByText('Ya existe una regla con ese patrón y ese signo')).toBeNull()

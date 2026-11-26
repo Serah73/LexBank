@@ -39,7 +39,7 @@ it('shows each rule as a sentence with its category', async () => {
   await screen.findAllByRole('cell')
   expect(screen.getAllByRole('cell').map((c) => c.textContent)).toEqual([
     'Gasto con la palabra «finca»',
-    'Restaurantes y cafeterías',
+    'Restaurantes',
     'Movimiento cuya descripción contiene «mercadona»',
     'Supermercado',
   ])
