@@ -13,11 +13,16 @@ on:
 jobs:
   backend:
     runs-on: windows-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5.1.0
       - uses: actions/setup-dotnet@v5.1.0
         with:
           dotnet-version: 8.0.x
+      - uses: actions/cache@v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'global.json') }}
+          restore-keys: nuget-${{ runner.os }}-
       - run: dotnet build --configuration Release
       - run: dotnet test --configuration Release --no-build
