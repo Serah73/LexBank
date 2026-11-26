@@ -1,3 +1,4 @@
+using LexBank.Application;
 using LexBank.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -187,6 +188,33 @@ public class EfTransactionRepositoryTests : IDisposable
         var updated = await repository.TryUpdateCategorizationAsync("luis@example.com", read, Category.Groceries, null);
 
         Assert.False(updated);
+        Assert.Equal(Category.Uncategorized, (await repository.ListAsync(Email)).Single().Category);
+    }
+
+    [Fact]
+    public async Task GetAsync_TransactionOfAnotherUser_ThrowsTransactionNotFound()
+    {
+        var repository = new EfTransactionRepository(_context);
+        _context.Set<User>().Add(new User("luis@example.com", "hash"));
+        await _context.SaveChangesAsync();
+        await repository.AddAsync(Email, [new Transaction(new DateOnly(2025, 1, 10), "COMPRA", -10.00m, 100.00m, Bank.Ruralvia)]);
+        var read = (await repository.ListAsync(Email)).Single();
+
+        await Assert.ThrowsAsync<TransactionNotFoundException>(() => repository.GetAsync("luis@example.com", read.Id));
+    }
+
+    [Fact]
+    public async Task UpdateAsync_TransactionOfAnotherUser_ThrowsTransactionNotFoundAndChangesNothing()
+    {
+        var repository = new EfTransactionRepository(_context);
+        _context.Set<User>().Add(new User("luis@example.com", "hash"));
+        await _context.SaveChangesAsync();
+        await repository.AddAsync(Email, [new Transaction(new DateOnly(2025, 1, 10), "COMPRA", -10.00m, 100.00m, Bank.Ruralvia)]);
+        var read = (await repository.ListAsync(Email)).Single();
+
+        await Assert.ThrowsAsync<TransactionNotFoundException>(
+            () => repository.UpdateAsync("luis@example.com", read.Correct(Category.Groceries)));
+
         Assert.Equal(Category.Uncategorized, (await repository.ListAsync(Email)).Single().Category);
     }
 
