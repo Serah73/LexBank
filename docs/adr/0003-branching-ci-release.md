@@ -12,7 +12,7 @@
 ## Decision
 
 - **Branches:** work is done on `develop`; `main` is protected and only receives changes through a pull request. No status check is required to merge.
-- **CI (`backend.yml`):** runs `dotnet build` and `dotnet test` in Release mode on pull requests into `main`, only when backend files, the solution or the workflow itself change. It has a 5-minute timeout.
+- **CI (`backend.yml`):** runs `dotnet build` and `dotnet test` in Release mode on pull requests into `main`, only when backend files, the solution or the workflow itself change. It has a 15-minute timeout.
 - **Release (`release.yml`):** when backend files change on `main` (that is, when a pull request is merged), it creates a git tag and runs a placeholder deployment step. It does not rebuild or retest, because the same code was already tested by `backend` on the pull request. It can also be run manually from `main`.
 - **Versioning:** automatic tags are `v0.0.<run_number>`. For significant versions (e.g. `v1.1.0` or `v2.0.0`), a manual run accepts an explicit `v<major>.<minor>.<patch>` tag.
 - **CI (`frontend.yml`):** runs `npm ci`, lint, tests and build on pull requests into `main`, only when frontend files or the workflow itself change. It runs on Linux, since it needs no LocalDB, and has a 5-minute timeout.

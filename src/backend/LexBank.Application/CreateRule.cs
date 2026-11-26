@@ -10,6 +10,7 @@ public class CreateRule(IRuleRepository repository)
 
     public async Task<Rule> ExecuteAsync(string pattern, Category category, AmountSign sign)
     {
+        pattern = pattern.Trim();
         if (!Rule.IsValidPattern(pattern)) throw new InvalidRulePatternException();
 
         var rules = await repository.ListAsync();

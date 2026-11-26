@@ -45,7 +45,8 @@ public class UploadStatement(
         return new UploadStatementResult(
             returned.Select(t => t ?? added.Dequeue()).ToList(),
             result.FailedRows,
-            skipped);
+            skipped,
+            Accuracy.From(await repository.ListAsync(email)));
     }
 
     // What identifies a row of a statement: the category and the rule are not part of it, because the user can change them.
