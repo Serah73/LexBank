@@ -42,6 +42,8 @@ All code generated, refactored or reviewed must strictly follow the SOLID princi
 - **I - Interface Segregation Principle:** prefer several small, specific interfaces over a single general-purpose one. No client should be forced to depend on methods it does not use.
 - **D - Dependency Inversion Principle:** high-level modules must not depend on low-level modules; both must depend on abstractions. Use dependency injection to decouple concrete implementations and make unit testing easier.
 
+Duplication means the same rule that must change together; lines that merely look alike are not a reason to refactor.
+
 Apply SOLID to the code the current story needs; introduce an abstraction when there is a concrete reason (dependency rule, testability, or a second implementation), not in anticipation.
 
 ## Commands

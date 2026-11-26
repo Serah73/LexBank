@@ -35,6 +35,7 @@ The system deliberately does **not** use artificial intelligence or machine lear
 - **Intended use:** family use, run locally; it is not designed as a public service.
 - **Users:** several users with email and password sign-up; each user sees only their own data. There are no roles.
 - **Shared knowledge:** categories and rules are common to all users; rules created from corrections join the common set.
+- **Accuracy:** a transaction counts as a hit when its category equals the category of the rule the engine currently assigns to it; a transaction without a rule counts as a miss. A transaction that has a rule and has not been corrected therefore counts as a hit, so a wrong category that nobody corrects is not detected. Each user sees the accuracy over their own transactions.
 - **Currency:** every amount is in EUR; there is no multi-currency support and no conversion.
 - **Languages:** the user interface is offered in Spanish (default) and English. The API returns stable codes, never user-facing text; the frontend translates them.
 - **Connectivity:** always online; there is no offline mode.
@@ -146,7 +147,8 @@ The project is under active development.
 | Application of the current rules to the saved transactions, keeping the user's corrections | Implemented |
 | Viewing the list of rules, ordered by which one wins first | Implemented |
 | Editing and deleting rules | Planned |
-| Accuracy measurement and spending charts | Planned |
+| Accuracy measurement of the categorization engine | Implemented |
+| Spending charts | Planned |
 | Spanish and English user interface | Planned (Spanish only for now) |
 | Visual design with light and dark themes | Planned |
 
