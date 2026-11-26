@@ -141,6 +141,56 @@ public class EfTransactionRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task TryUpdateCategorizationAsync_TransactionUnchangedSinceItWasRead_StoresTheCategoryAndTheRule()
+    {
+        var repository = new EfTransactionRepository(_context);
+        var rule = (await new EfRuleRepository(_context).ListAsync()).Single(r => r.Pattern == "*mercadona*");
+        await repository.AddAsync(Email, [new Transaction(new DateOnly(2025, 1, 10), "COMPRA", -10.00m, 100.00m, Bank.Ruralvia)]);
+        var read = (await repository.ListAsync(Email)).Single();
+
+        var updated = await repository.TryUpdateCategorizationAsync(Email, read, Category.Groceries, rule);
+
+        Assert.True(updated);
+        var stored = (await repository.ListAsync(Email)).Single();
+        Assert.Equal(Category.Groceries, stored.Category);
+        Assert.Equal(rule.Id, stored.Rule!.Id);
+        Assert.False(stored.Corrected);
+    }
+
+    [Fact]
+    public async Task TryUpdateCategorizationAsync_TransactionCorrectedAfterItWasRead_KeepsTheCorrection()
+    {
+        var repository = new EfTransactionRepository(_context);
+        var rule = (await new EfRuleRepository(_context).ListAsync()).Single(r => r.Pattern == "*mercadona*");
+        await repository.AddAsync(Email, [new Transaction(new DateOnly(2025, 1, 10), "COMPRA", -10.00m, 100.00m, Bank.Ruralvia)]);
+        var read = (await repository.ListAsync(Email)).Single();
+        await repository.UpdateAsync(Email, read.Correct(Category.Health));
+
+        var updated = await repository.TryUpdateCategorizationAsync(Email, read, Category.Groceries, rule);
+
+        Assert.False(updated);
+        var stored = (await repository.ListAsync(Email)).Single();
+        Assert.Equal(Category.Health, stored.Category);
+        Assert.True(stored.Corrected);
+        Assert.Null(stored.Rule);
+    }
+
+    [Fact]
+    public async Task TryUpdateCategorizationAsync_TransactionOfAnotherUser_ChangesNothing()
+    {
+        var repository = new EfTransactionRepository(_context);
+        _context.Set<User>().Add(new User("luis@example.com", "hash"));
+        await _context.SaveChangesAsync();
+        await repository.AddAsync(Email, [new Transaction(new DateOnly(2025, 1, 10), "COMPRA", -10.00m, 100.00m, Bank.Ruralvia)]);
+        var read = (await repository.ListAsync(Email)).Single();
+
+        var updated = await repository.TryUpdateCategorizationAsync("luis@example.com", read, Category.Groceries, null);
+
+        Assert.False(updated);
+        Assert.Equal(Category.Uncategorized, (await repository.ListAsync(Email)).Single().Category);
+    }
+
+    [Fact]
     public async Task ListAsync_StoredTransactionWithoutRule_ReturnsNoRule()
     {
         var repository = new EfTransactionRepository(_context);

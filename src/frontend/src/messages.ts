@@ -115,6 +115,18 @@ export const statementErrorMessages: Record<StatementError, string> = {
   ProcessingFailed: 'No se pudo procesar el fichero',
 }
 
+export type ApplyRulesError = 'ApplyRulesFailed' | 'ReloadFailed'
+
+export const applyRulesErrorMessages: Record<ApplyRulesError, string> = {
+  ApplyRulesFailed: 'No se pudieron aplicar las reglas',
+  ReloadFailed: 'No se pudieron recargar los movimientos',
+}
+
+export function describeAppliedRules(changed: number): string {
+  const result = changed === 1 ? 'movimiento cambió' : 'movimientos cambiaron'
+  return `Reglas aplicadas: ${changed} ${result} de categoría`
+}
+
 export type RulesLoadError = 'RulesLoadFailed'
 
 export const rulesLoadErrorMessages: Record<RulesLoadError, string> = {

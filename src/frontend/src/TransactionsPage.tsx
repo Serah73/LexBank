@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { useNavigate } from 'react-router'
-import { bankNames, categoryNames, correctionErrorMessages, describeRule, failedRowMessages, statementErrorMessages } from './messages'
-import type { Bank, Category, CorrectionError, FailedRowReason, Rule, StatementError } from './messages'
+import { applyRulesErrorMessages, bankNames, categoryNames, correctionErrorMessages, describeAppliedRules, describeRule,failedRowMessages, statementErrorMessages } from './messages'
+import type { ApplyRulesError, Bank, Category, CorrectionError, FailedRowReason, Rule, StatementError } from './messages'
 import RuleOfferForm from './RuleOfferForm'
 import type { RuleOffer } from './RuleOfferForm'
 
@@ -26,7 +26,10 @@ interface FailedRow {
 // Resolves to null when there is no session (the API answers 401).
 async function fetchStoredTransactions(): Promise<Transaction[] | null> {
   const response = await fetch('/api/transactions')
-  return response.status === 401 ? null : response.json()
+  if (response.status === 401) return null
+  const stored = response.ok ? await response.json() : null
+  if (!Array.isArray(stored)) throw new Error('The transactions were not loaded')
+  return stored
 }
 
 function TransactionsPage() {
@@ -37,6 +40,9 @@ function TransactionsPage() {
   const [skipped, setSkipped] = useState(0)
   const [offer, setOffer] = useState<{ id: number } & RuleOffer | null>(null)
   const [correctionError, setCorrectionError] = useState<CorrectionError | null>(null)
+
+  const [applied, setApplied] = useState<number | null>(null)
+  const [applyError, setApplyError] = useState<ApplyRulesError | null>(null)
 
   const uploaded = useRef(false)
 
@@ -61,6 +67,8 @@ function TransactionsPage() {
     const file = event.target.files?.[0]
     if (!file) return
     event.target.value = ''
+    setApplied(null)
+    setApplyError(null)
     setCorrectionError(null)
     setOffer(null)
 
@@ -88,6 +96,8 @@ function TransactionsPage() {
   }
 
   async function handleCategoryChange(id: number, category: Category) {
+    setApplied(null)
+    setApplyError(null)
     setCorrectionError(null)
     setOffer(null)
     try {
@@ -114,10 +124,40 @@ function TransactionsPage() {
     }
   }
 
+  async function handleApplyRules() {
+    setApplied(null)
+    setApplyError(null)
+    try {
+      const response = await fetch('/api/transactions/apply-rules', { method: 'POST' })
+      const result = await response.json()
+      if (!response.ok || !Number.isInteger(result?.changed)) throw new Error('The rules were not applied')
+      setApplied(result.changed)
+    } catch {
+      setApplyError('ApplyRulesFailed')
+      return
+    }
+    await reloadTransactions()
+  }
+
+  async function reloadTransactions() {
+    try {
+      const stored = await fetchStoredTransactions()
+      if (stored === null) navigate('/login', { replace: true })
+      else setTransactions(stored)
+    } catch {
+      setApplyError('ReloadFailed')
+    }
+  }
+
   return (
     <main>
       <h1>LexBank</h1>
       <input type="file" accept=".xlsx,.csv" onChange={handleFileChange} />
+      <button type="button" onClick={handleApplyRules}>
+        Aplicar reglas
+      </button>
+      {applied !== null && <p role="status">{describeAppliedRules(applied)}</p>}
+      {applyError && <p role="alert">{applyRulesErrorMessages[applyError]}</p>}
       {error && <p role="alert">{statementErrorMessages[error]}</p>}
       {correctionError && <p role="alert">{correctionErrorMessages[correctionError]}</p>}
       {offer && <RuleOfferForm key={`${offer.id}-${offer.category}`} offer={offer} onClose={() => setOffer(null)} />}

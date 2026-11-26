@@ -1095,3 +1095,147 @@ it.each([
   expect((await screen.findByRole('alert')).textContent).toBe('No se pudo cambiar la categoría de la regla')
   expect(form.getByRole('button', { name: 'Reemplazar' })).toBeTruthy()
 })
+
+it('applies the rules, shows how many transactions changed and reloads the list', async () => {
+  let applied = false
+  const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+    if (url === '/api/transactions/apply-rules' && init?.method === 'POST') {
+      applied = true
+      return Promise.resolve(Response.json({ changed: 2 }))
+    }
+    return Promise.resolve(Response.json([storedTransaction({ category: applied ? 'Health' : 'Groceries' })]))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  render(<App />)
+  await screen.findByRole('table')
+
+  fireEvent.click(screen.getByRole('button', { name: 'Aplicar reglas' }))
+
+  expect((await screen.findByRole('status')).textContent).toBe('Reglas aplicadas: 2 movimientos cambiaron de categoría')
+  await waitFor(() => expect(cellTexts()).toContain('Salud'))
+})
+
+it.each([
+  ['the server answers an error', () => Promise.resolve(new Response(null, { status: 500 }))],
+  ['the server is unreachable', () => Promise.reject(new TypeError('Failed to fetch'))],
+])('shows a general error when applying the rules fails because %s', async (_case, failure) => {
+  const answers = [() => Promise.resolve(Response.json({ changed: 1 })), failure]
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string) =>
+      url === '/api/transactions/apply-rules' ? answers.shift()!() : Promise.resolve(Response.json([storedTransaction()])),
+    ),
+  )
+  render(<App />)
+  await screen.findByRole('table')
+  fireEvent.click(screen.getByRole('button', { name: 'Aplicar reglas' }))
+  await screen.findByRole('status')
+
+  fireEvent.click(screen.getByRole('button', { name: 'Aplicar reglas' }))
+
+  expect((await screen.findByRole('alert')).textContent).toBe('No se pudieron aplicar las reglas')
+  expect(screen.queryByRole('status')).toBeNull()
+})
+
+async function applyRulesAndWaitForTheMessage() {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string, init?: RequestInit) => {
+      if (url === '/api/transactions/apply-rules') return Promise.resolve(Response.json({ changed: 1 }))
+      if (url === '/api/statements') return Promise.resolve(Response.json({ transactions: [], failedRows: [], skippedTransactions: 0 }))
+      return Promise.resolve(Response.json(init?.method === 'PUT' ? storedTransaction({ category: 'Health' }) : [storedTransaction()]))
+    }),
+  )
+  const rendered = render(<App />)
+  await screen.findByRole('table')
+  fireEvent.click(screen.getByRole('button', { name: 'Aplicar reglas' }))
+  await screen.findByRole('status')
+  return rendered
+}
+
+it('uses the singular when applying the rules changes one transaction', async () => {
+  await applyRulesAndWaitForTheMessage()
+
+  expect(screen.getByRole('status').textContent).toBe('Reglas aplicadas: 1 movimiento cambió de categoría')
+})
+
+it('removes the applied rules message when a statement is uploaded', async () => {
+  const { container } = await applyRulesAndWaitForTheMessage()
+
+  uploadFile(container)
+
+  await waitFor(() => expect(screen.queryByRole('status')).toBeNull())
+})
+
+it('removes the applied rules message when a category is corrected', async () => {
+  await applyRulesAndWaitForTheMessage()
+
+  fireEvent.change(screen.getByRole('combobox', { name: 'Categoría de COMPRA' }), { target: { value: 'Health' } })
+
+  expect(screen.queryByText(/Reglas aplicadas/)).toBeNull()
+})
+
+// The first load of the list works; the one after applying the rules answers with `reload`.
+async function applyRulesAndReload(reload: () => Promise<Response>) {
+  const lists = [() => Promise.resolve(Response.json([storedTransaction()])), reload]
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string) =>
+      url === '/api/transactions/apply-rules' ? Promise.resolve(Response.json({ changed: 2 })) : lists.shift()!(),
+    ),
+  )
+  render(<App />)
+  await screen.findByRole('table')
+  fireEvent.click(screen.getByRole('button', { name: 'Aplicar reglas' }))
+}
+
+it.each([
+  ['the server answers an error', () => Promise.resolve(Response.json({ title: 'Error' }, { status: 500 }))],
+  ['the server is unreachable', () => Promise.reject(new TypeError('Failed to fetch'))],
+  ['the response is not a list', () => Promise.resolve(Response.json({ title: 'Unexpected' }))],
+])('keeps the applied rules message and the table when the reload fails because %s', async (_case, reload) => {
+  await applyRulesAndReload(reload)
+
+  expect((await screen.findByRole('alert')).textContent).toBe('No se pudieron recargar los movimientos')
+  expect(screen.getByRole('status').textContent).toBe('Reglas aplicadas: 2 movimientos cambiaron de categoría')
+  expect(cellTexts()).toContain('Supermercado')
+})
+
+it('lands on the log-in page when the session ends before the list is reloaded', async () => {
+  await applyRulesAndReload(() => Promise.resolve(new Response(null, { status: 401 })))
+
+  await screen.findByRole('form', { name: 'Iniciar sesión' })
+  expect(window.location.pathname).toBe('/login')
+})
+
+async function failToApplyRules() {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string, init?: RequestInit) => {
+      if (url === '/api/transactions/apply-rules') return Promise.resolve(new Response(null, { status: 500 }))
+      if (url === '/api/statements') return Promise.resolve(Response.json({ transactions: [], failedRows: [], skippedTransactions: 0 }))
+      return Promise.resolve(Response.json(init?.method === 'PUT' ? storedTransaction({ category: 'Health' }) : [storedTransaction()]))
+    }),
+  )
+  const rendered = render(<App />)
+  await screen.findByRole('table')
+  fireEvent.click(screen.getByRole('button', { name: 'Aplicar reglas' }))
+  await screen.findByRole('alert')
+  return rendered
+}
+
+it('removes the apply rules error when a statement is uploaded', async () => {
+  const { container } = await failToApplyRules()
+
+  uploadFile(container)
+
+  await waitFor(() => expect(screen.queryByText('No se pudieron aplicar las reglas')).toBeNull())
+})
+
+it('removes the apply rules error when a category is corrected', async () => {
+  await failToApplyRules()
+
+  fireEvent.change(screen.getByRole('combobox', { name: 'Categoría de COMPRA' }), { target: { value: 'Health' } })
+
+  expect(screen.queryByText('No se pudieron aplicar las reglas')).toBeNull()
+})

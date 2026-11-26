@@ -57,6 +57,19 @@ public class EfTransactionRepository(LexBankDbContext context) : ITransactionRep
         if (updated == 0) throw new TransactionNotFoundException("The transaction does not exist");
     }
 
+    public async Task<bool> TryUpdateCategorizationAsync(string email, Transaction asRead, Category category, Rule? rule)
+    {
+        var userId = await UserIdAsync(email);
+        var ruleId = rule?.Id;
+        var updated = await context.Set<Transaction>()
+            .Where(t => t.Id == asRead.Id && EF.Property<int>(t, "UserId") == userId
+                && t.Corrected == asRead.Corrected && t.Category == asRead.Category)
+            .ExecuteUpdateAsync(set => set
+                .SetProperty(t => EF.Property<int?>(t, "RuleId"), ruleId)
+                .SetProperty(t => t.Category, category));
+        return updated == 1;
+    }
+
     private async Task<int> UserIdAsync(string email) =>
         await context.Set<User>().Where(u => u.Email == email).Select(u => EF.Property<int>(u, "Id")).SingleAsync();
 }
