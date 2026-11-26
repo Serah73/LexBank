@@ -143,3 +143,7 @@ export const ruleErrorMessages: Record<RuleError, string> = {
   RuleCreationFailed: 'No se pudo crear la regla',
   RuleUpdateFailed: 'No se pudo cambiar la categoría de la regla',
 }
+
+export function describeAccuracy(hits: number, total: number) {
+  return `Aciertos del motor: ${Math.round((hits / total) * 100)} % (${hits} de ${total})`
+}

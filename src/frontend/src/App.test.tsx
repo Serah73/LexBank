@@ -762,7 +762,7 @@ function stubCorrection(correction: () => Promise<Response>, stored: unknown[] =
 
 it('saves the chosen category and marks the row as corrected', async () => {
   const fetchMock = stubCorrection(() =>
-    Promise.resolve(Response.json(storedTransaction({ category: 'Restaurants', corrected: true }))),
+    Promise.resolve(Response.json({ transaction: storedTransaction({ category: 'Restaurants', corrected: true }) })),
   )
   render(<App />)
   const selector = await screen.findByRole('combobox', { name: 'Categoría de COMPRA' })
@@ -855,7 +855,7 @@ function stubRules(createRule: () => Promise<Response>, stored: unknown[] = [sto
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     if (init?.method === 'PUT') {
       const category = JSON.parse(init.body as string).category
-      return Promise.resolve(Response.json({ ...(stored[0] as object), category, corrected: true }))
+      return Promise.resolve(Response.json({ transaction: { ...(stored[0] as object), category, corrected: true } }))
     }
     if (url === '/api/rules' && init?.method === 'POST') return createRule()
     return Promise.resolve(Response.json(stored))
@@ -981,7 +981,7 @@ it('closes the previous rule offer when another correction fails', async () => {
       init?.method !== 'PUT'
         ? Promise.resolve(Response.json(stored))
         : url === '/api/transactions/1/category'
-          ? Promise.resolve(Response.json({ ...stored[0], category: 'Restaurants', corrected: true }))
+          ? Promise.resolve(Response.json({ transaction: { ...stored[0], category: 'Restaurants', corrected: true } }))
           : Promise.resolve(new Response(null, { status: 500 })),
     ),
   )
@@ -1000,7 +1000,7 @@ it('closes the rule offer when a statement is uploaded', async () => {
     'fetch',
     vi.fn((_url: string, init?: RequestInit) => {
       if (init?.method === 'PUT')
-        return Promise.resolve(Response.json(storedTransaction({ category: 'Restaurants', corrected: true })))
+        return Promise.resolve(Response.json({ transaction: storedTransaction({ category: 'Restaurants', corrected: true }) }))
       if (init?.method === 'POST') return Promise.resolve(Response.json({ transactions: [storedTransaction()], failedRows: [] }))
       return Promise.resolve(Response.json([storedTransaction()]))
     }),
@@ -1023,7 +1023,7 @@ function stubReplacement(
   const stored = [storedTransaction({ description: 'TJ-MERCADONA FINCA' })]
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     if (url === '/api/rules/7/category' && init?.method === 'PUT') return replaceRule()
-    if (init?.method === 'PUT') return Promise.resolve(Response.json({ ...stored[0], category: 'Restaurants', corrected: true }))
+    if (init?.method === 'PUT') return Promise.resolve(Response.json({ transaction: { ...stored[0], category: 'Restaurants', corrected: true } }))
     if (url === '/api/rules' && init?.method === 'POST')
       return Promise.resolve(Response.json({ error: 'RuleAlreadyExists', rule: existing }, { status: 409 }))
     return Promise.resolve(Response.json(stored))
@@ -1143,7 +1143,7 @@ async function applyRulesAndWaitForTheMessage() {
     vi.fn((url: string, init?: RequestInit) => {
       if (url === '/api/transactions/apply-rules') return Promise.resolve(Response.json({ changed: 1 }))
       if (url === '/api/statements') return Promise.resolve(Response.json({ transactions: [], failedRows: [], skippedTransactions: 0 }))
-      return Promise.resolve(Response.json(init?.method === 'PUT' ? storedTransaction({ category: 'Health' }) : [storedTransaction()]))
+      return Promise.resolve(Response.json(init?.method === 'PUT' ? { transaction: storedTransaction({ category: 'Health' }) } : [storedTransaction()]))
     }),
   )
   const rendered = render(<App />)
@@ -1180,9 +1180,11 @@ async function applyRulesAndReload(reload: () => Promise<Response>) {
   const lists = [() => Promise.resolve(Response.json([storedTransaction()])), reload]
   vi.stubGlobal(
     'fetch',
-    vi.fn((url: string) =>
-      url === '/api/transactions/apply-rules' ? Promise.resolve(Response.json({ changed: 2 })) : lists.shift()!(),
-    ),
+    vi.fn((url: string) => {
+      if (url === '/api/transactions/apply-rules') return Promise.resolve(Response.json({ changed: 2 }))
+      if (url === '/api/transactions/accuracy') return Promise.resolve(Response.json({ hits: 1, total: 1 }))
+      return lists.shift()!()
+    }),
   )
   render(<App />)
   await screen.findByRole('table')
@@ -1214,7 +1216,7 @@ async function failToApplyRules() {
     vi.fn((url: string, init?: RequestInit) => {
       if (url === '/api/transactions/apply-rules') return Promise.resolve(new Response(null, { status: 500 }))
       if (url === '/api/statements') return Promise.resolve(Response.json({ transactions: [], failedRows: [], skippedTransactions: 0 }))
-      return Promise.resolve(Response.json(init?.method === 'PUT' ? storedTransaction({ category: 'Health' }) : [storedTransaction()]))
+      return Promise.resolve(Response.json(init?.method === 'PUT' ? { transaction: storedTransaction({ category: 'Health' }) } : [storedTransaction()]))
     }),
   )
   const rendered = render(<App />)
@@ -1238,4 +1240,84 @@ it('removes the apply rules error when a category is corrected', async () => {
   fireEvent.change(screen.getByRole('combobox', { name: 'Categoría de COMPRA' }), { target: { value: 'Health' } })
 
   expect(screen.queryByText('No se pudieron aplicar las reglas')).toBeNull()
+})
+
+it('shows the accuracy of the engine as a whole percentage with hits and total', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string) =>
+      Promise.resolve(Response.json(url === '/api/transactions/accuracy' ? { hits: 2, total: 3 } : [storedTransaction()])),
+    ),
+  )
+  render(<App />)
+
+  expect(await screen.findByText('Aciertos del motor: 67 % (2 de 3)')).toBeTruthy()
+})
+
+it('shows no accuracy when there are no transactions', async () => {
+  const readAccuracy = vi.fn(() => Promise.resolve({ hits: 0, total: 0 }))
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string) =>
+      Promise.resolve(url === '/api/transactions/accuracy' ? { ok: true, status: 200, json: readAccuracy } : Response.json([])),
+    ),
+  )
+  render(<App />)
+  await waitFor(() => expect(readAccuracy).toHaveBeenCalled())
+  await new Promise((resolve) => setTimeout(resolve))
+
+  expect(screen.queryByText(/Aciertos del motor/)).toBeNull()
+})
+
+it('updates the accuracy from the correction response without asking for it again', async () => {
+  const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+    if (init?.method === 'PUT') {
+      const transaction = storedTransaction({ category: 'Restaurants', corrected: true })
+      return Promise.resolve(Response.json({ transaction, accuracy: { hits: 0, total: 1 } }))
+    }
+    return Promise.resolve(Response.json(url === '/api/transactions/accuracy' ? { hits: 1, total: 1 } : [storedTransaction()]))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  render(<App />)
+  await screen.findByText('Aciertos del motor: 100 % (1 de 1)')
+
+  await correctTo('Restaurants', 'COMPRA')
+
+  expect(await screen.findByText('Aciertos del motor: 0 % (0 de 1)')).toBeTruthy()
+  expect(fetchMock.mock.calls.filter(([url]) => url === '/api/transactions/accuracy')).toHaveLength(1)
+})
+
+it('updates the accuracy from the apply rules response without asking for it again', async () => {
+  const fetchMock = vi.fn((url: string) => {
+    if (url === '/api/transactions/apply-rules') {
+      return Promise.resolve(Response.json({ changed: 1, accuracy: { hits: 1, total: 1 } }))
+    }
+    return Promise.resolve(Response.json(url === '/api/transactions/accuracy' ? { hits: 0, total: 1 } : [storedTransaction()]))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  render(<App />)
+  await screen.findByText('Aciertos del motor: 0 % (0 de 1)')
+
+  fireEvent.click(screen.getByRole('button', { name: 'Aplicar reglas' }))
+
+  expect(await screen.findByText('Aciertos del motor: 100 % (1 de 1)')).toBeTruthy()
+  expect(fetchMock.mock.calls.filter(([url]) => url === '/api/transactions/accuracy')).toHaveLength(1)
+})
+
+it('updates the accuracy from the upload response', async () => {
+  const fetchMock = vi.fn((url: string) => {
+    if (url === '/api/statements') {
+      return Promise.resolve(
+        Response.json({ transactions: [storedTransaction()], failedRows: [], skippedTransactions: 0, accuracy: { hits: 1, total: 2 } }),
+      )
+    }
+    return Promise.resolve(Response.json(url === '/api/transactions/accuracy' ? { hits: 0, total: 0 } : []))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  const { container } = render(<App />)
+
+  uploadFile(container)
+
+  expect(await screen.findByText('Aciertos del motor: 50 % (1 de 2)')).toBeTruthy()
+  expect(fetchMock.mock.calls.filter(([url]) => url === '/api/transactions/accuracy')).toHaveLength(1)
 })

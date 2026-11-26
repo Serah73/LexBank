@@ -618,9 +618,9 @@ public class StatementsEndpointTests : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        Assert.Equal(id, body.RootElement.GetProperty("id").GetInt32());
-        Assert.Equal("Restaurants", body.RootElement.GetProperty("category").GetString());
-        Assert.True(body.RootElement.GetProperty("corrected").GetBoolean());
+        Assert.Equal(id, body.RootElement.GetProperty("transaction").GetProperty("id").GetInt32());
+        Assert.Equal("Restaurants", body.RootElement.GetProperty("transaction").GetProperty("category").GetString());
+        Assert.True(body.RootElement.GetProperty("transaction").GetProperty("corrected").GetBoolean());
     }
 
     // A client of a user with one stored transaction categorized as Groceries by the rule "*mercadona*", and its id.
@@ -662,8 +662,8 @@ public class StatementsEndpointTests : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        Assert.Equal("Uncategorized", body.RootElement.GetProperty("category").GetString());
-        Assert.True(body.RootElement.GetProperty("corrected").GetBoolean());
+        Assert.Equal("Uncategorized", body.RootElement.GetProperty("transaction").GetProperty("category").GetString());
+        Assert.True(body.RootElement.GetProperty("transaction").GetProperty("corrected").GetBoolean());
     }
 
     [Fact]
@@ -839,6 +839,92 @@ public class StatementsEndpointTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         using var stored = JsonDocument.Parse(await client.GetStringAsync("/api/transactions"));
         Assert.Equal("Uncategorized", stored.RootElement[0].GetProperty("category").GetString());
+    }
+
+    [Fact]
+    public async Task GetAccuracy_StoredTransactions_ReturnsHitsAndTotalOfTheSessionUserOnly()
+    {
+        using var other = await ClientReadingWithAsync(ReaderWithOneTransaction("tj-mercadona finca espana"), "luis@example.com");
+        await other.PostAsync("/api/statements", AnyFileUpload());
+        var reader = new StubStatementReader
+        {
+            Transactions =
+            [
+                new Transaction(new DateOnly(2025, 1, 10), "tj-mercadona finca espana", -23.40m, 100m, Bank.Ruralvia),
+                new Transaction(new DateOnly(2025, 1, 11), "zzz finca qqq", -10m, 90m, Bank.Ruralvia),
+            ],
+        };
+        using var client = await ClientReadingWithAsync(reader);
+        await client.PostAsync("/api/statements", AnyFileUpload());
+
+        var response = await client.GetAsync("/api/transactions/accuracy");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(1, body.RootElement.GetProperty("hits").GetInt32());
+        Assert.Equal(2, body.RootElement.GetProperty("total").GetInt32());
+    }
+
+    [Fact]
+    public async Task GetAccuracy_NoTransactions_ReturnsZeroOfZero()
+    {
+        var response = await _client.GetAsync("/api/transactions/accuracy");
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(0, body.RootElement.GetProperty("hits").GetInt32());
+        Assert.Equal(0, body.RootElement.GetProperty("total").GetInt32());
+    }
+
+    [Fact]
+    public async Task GetAccuracy_WithoutSession_ReturnsUnauthorized()
+    {
+        using var anonymous = _factory.CreateClient();
+
+        var response = await anonymous.GetAsync("/api/transactions/accuracy");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CorrectCategory_Saved_ReturnsTheTransactionAndTheNewAccuracy()
+    {
+        var (client, _, id) = await ClientWithOneTransactionAsync();
+        using var _client = client;
+
+        var response = await client.PutAsJsonAsync($"/api/transactions/{id}/category", new { category = "Restaurants" });
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("Restaurants", body.RootElement.GetProperty("transaction").GetProperty("category").GetString());
+        Assert.Equal(0, body.RootElement.GetProperty("accuracy").GetProperty("hits").GetInt32());
+        Assert.Equal(1, body.RootElement.GetProperty("accuracy").GetProperty("total").GetInt32());
+    }
+
+    [Fact]
+    public async Task ApplyRules_RulesChanged_ReturnsTheNewAccuracy()
+    {
+        using var client = await ClientReadingWithAsync(ReaderWithOneTransaction("zzz finca qqq"));
+        await client.PostAsync("/api/statements", AnyFileUpload());
+        await client.PostAsJsonAsync("/api/rules", new { pattern = "finca", category = "Restaurants", sign = "Expense" });
+
+        var response = await client.PostAsync("/api/transactions/apply-rules", null);
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(1, body.RootElement.GetProperty("accuracy").GetProperty("hits").GetInt32());
+        Assert.Equal(1, body.RootElement.GetProperty("accuracy").GetProperty("total").GetInt32());
+    }
+
+    [Fact]
+    public async Task Upload_NewTransactions_ReturnsTheNewAccuracy()
+    {
+        using var first = await ClientReadingWithAsync(ReaderWithOneTransaction("tj-mercadona finca espana"));
+        await first.PostAsync("/api/statements", AnyFileUpload());
+        using var client = await ClientReadingWithAsync(ReaderWithOneTransaction("zzz finca qqq"));
+
+        var response = await client.PostAsync("/api/statements", AnyFileUpload());
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(1, body.RootElement.GetProperty("accuracy").GetProperty("hits").GetInt32());
+        Assert.Equal(2, body.RootElement.GetProperty("accuracy").GetProperty("total").GetInt32());
     }
 
     private static StubStatementReader ReaderWithOneTransaction(string description) => new()

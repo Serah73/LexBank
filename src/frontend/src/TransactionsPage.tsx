@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { useNavigate } from 'react-router'
-import { applyRulesErrorMessages, bankNames, categoryNames, correctionErrorMessages, describeAppliedRules, describeRule,failedRowMessages, statementErrorMessages } from './messages'
+import { applyRulesErrorMessages, bankNames, categoryNames, correctionErrorMessages, describeAccuracy, describeAppliedRules, describeRule,failedRowMessages, statementErrorMessages } from './messages'
 import type { ApplyRulesError, Bank, Category, CorrectionError, FailedRowReason, Rule, StatementError } from './messages'
 import RuleOfferForm from './RuleOfferForm'
 import type { RuleOffer } from './RuleOfferForm'
@@ -18,6 +18,11 @@ interface Transaction {
   corrected: boolean
 }
 
+interface Accuracy {
+  hits: number
+  total: number
+}
+
 interface FailedRow {
   rowNumber: number
   reason: FailedRowReason
@@ -32,6 +37,16 @@ async function fetchStoredTransactions(): Promise<Transaction[] | null> {
   return stored
 }
 
+// Returns null when the value is not an accuracy.
+function toAccuracy(value: Partial<Accuracy> | null | undefined): Accuracy | null {
+  return Number.isInteger(value?.hits) && Number.isInteger(value?.total) ? (value as Accuracy) : null
+}
+
+async function fetchAccuracy(): Promise<Accuracy | null> {
+  const response = await fetch('/api/transactions/accuracy')
+  return toAccuracy(response.ok ? await response.json() : null)
+}
+
 function TransactionsPage() {
   const navigate = useNavigate()
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -44,6 +59,8 @@ function TransactionsPage() {
   const [applied, setApplied] = useState<number | null>(null)
   const [applyError, setApplyError] = useState<ApplyRulesError | null>(null)
 
+  const [accuracy, setAccuracy] = useState<Accuracy | null>(null)
+
   const uploaded = useRef(false)
 
   useEffect(() => {
@@ -51,6 +68,11 @@ function TransactionsPage() {
       .then((stored) => {
         if (stored === null) navigate('/login', { replace: true })
         else if (!uploaded.current) setTransactions(stored)
+      })
+      .catch(() => {})
+    fetchAccuracy()
+      .then((stored) => {
+        if (!uploaded.current) setAccuracy(stored)
       })
       .catch(() => {})
   }, [navigate])
@@ -87,6 +109,7 @@ function TransactionsPage() {
     if (response.ok && Array.isArray(result?.transactions) && Array.isArray(result?.failedRows)) {
       uploaded.current = true
       setTransactions(result.transactions)
+      setAccuracy(toAccuracy(result.accuracy))
       setFailedRows(result.failedRows)
       setSkipped(Number.isInteger(result.skippedTransactions) ? result.skippedTransactions : 0)
       setError(null)
@@ -106,9 +129,11 @@ function TransactionsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category }),
       })
-      const updated: Transaction = await response.json()
+      const result = await response.json()
+      const updated: Transaction = result?.transaction
       if (!response.ok || updated?.id !== id) throw new Error('The correction was not saved')
       setTransactions((current) => current.map((t) => (t.id === id ? updated : t)))
+      setAccuracy(toAccuracy(result.accuracy))
       setOffer(
         updated.category === 'Uncategorized'
           ? null
@@ -132,6 +157,7 @@ function TransactionsPage() {
       const result = await response.json()
       if (!response.ok || !Number.isInteger(result?.changed)) throw new Error('The rules were not applied')
       setApplied(result.changed)
+      setAccuracy(toAccuracy(result.accuracy))
     } catch {
       setApplyError('ApplyRulesFailed')
       return
@@ -162,6 +188,7 @@ function TransactionsPage() {
       {correctionError && <p role="alert">{correctionErrorMessages[correctionError]}</p>}
       {offer && <RuleOfferForm key={`${offer.id}-${offer.category}`} offer={offer} onClose={() => setOffer(null)} />}
       {skipped > 0 && <p>Movimientos omitidos por estar ya importados: {skipped}</p>}
+      {accuracy && accuracy.total > 0 && <p>{describeAccuracy(accuracy.hits, accuracy.total)}</p>}
       {transactions.length > 0 && (
         <table>
           <thead>

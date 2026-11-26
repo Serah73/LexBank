@@ -4,7 +4,7 @@ namespace LexBank.Application;
 
 public class ApplyRules(ITransactionRepository repository, IRuleRepository ruleRepository)
 {
-    public async Task<int> ExecuteAsync(string email)
+    public async Task<ApplyRulesResult> ExecuteAsync(string email)
     {
         var categorizer = new Categorizer(await ruleRepository.ListAsync());
         var changed = 0;
@@ -20,6 +20,6 @@ public class ApplyRules(ITransactionRepository repository, IRuleRepository ruleR
             if (updated && category != transaction.Category) changed++;
         }
 
-        return changed;
+        return new(changed, Accuracy.From(await repository.ListAsync(email)));
     }
 }
