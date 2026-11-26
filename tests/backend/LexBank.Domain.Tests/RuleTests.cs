@@ -9,7 +9,10 @@ public class RuleTests
     [InlineData("**")]
     [InlineData("**foo")]
     [InlineData("foo**")]
-    public void IsValidPattern_EmptyOnlyStarsOrRepeatedStars_ReturnsFalse(string pattern)
+    [InlineData("* *")]
+    [InlineData("*-*")]
+    [InlineData(".")]
+    public void IsValidPattern_NoLetterOrDigitOrRepeatedStars_ReturnsFalse(string pattern)
     {
         Assert.False(Rule.IsValidPattern(pattern));
     }
@@ -20,6 +23,7 @@ public class RuleTests
     [InlineData("foo*")]
     [InlineData("*foo*")]
     [InlineData("cuenta remunerada")]
+    [InlineData("*24*")]
     public void IsValidPattern_WordsWithOrWithoutOneStarAtEachEnd_ReturnsTrue(string pattern)
     {
         Assert.True(Rule.IsValidPattern(pattern));
