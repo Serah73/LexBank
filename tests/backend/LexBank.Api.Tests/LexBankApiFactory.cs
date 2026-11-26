@@ -10,8 +10,10 @@ public class LexBankApiFactory : WebApplicationFactory<Program>
     private readonly string _connectionString =
         $"Server=(localdb)\\MSSQLLocalDB;Database=LexBank_ApiTests_{Guid.NewGuid():N};Integrated Security=true";
 
+    // The tests run in Development, which logs every SQL command; it would flood the test output.
     protected override void ConfigureWebHost(IWebHostBuilder builder) =>
-        builder.UseSetting("ConnectionStrings:LexBank", _connectionString);
+        builder.UseSetting("ConnectionStrings:LexBank", _connectionString)
+            .UseSetting("Logging:LogLevel:Microsoft.EntityFrameworkCore.Database.Command", "Warning");
 
     protected override void Dispose(bool disposing)
     {
