@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { ErrorMessage, SuccessMessage } from './Message'
 import { signUpErrorMessages } from './messages'
 import type { SignUpError } from './messages'
 
@@ -43,11 +46,16 @@ function SignUpForm() {
   const generalSignUpError = signUpError === 'SignUpFailed' ? signUpError : null
 
   return (
-    <>
-      <form aria-label="Crear cuenta" onSubmit={handleSignUp} noValidate>
-        <label>
+    <div className="flex flex-col gap-3">
+      <form
+        aria-label="Crear cuenta"
+        onSubmit={handleSignUp}
+        noValidate
+        className="flex flex-col gap-4 rounded-xl border bg-card p-6"
+      >
+        <label className="flex flex-col gap-1 text-sm font-medium">
           Correo electrónico
-          <input
+          <Input
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
@@ -55,10 +63,10 @@ function SignUpForm() {
             aria-describedby={emailError ? 'email-error' : undefined}
           />
         </label>
-        {emailError && <p id="email-error">{signUpErrorMessages[emailError]}</p>}
-        <label>
+        {emailError && <ErrorMessage id="email-error">{signUpErrorMessages[emailError]}</ErrorMessage>}
+        <label className="flex flex-col gap-1 text-sm font-medium">
           Contraseña
-          <input
+          <Input
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
@@ -66,14 +74,14 @@ function SignUpForm() {
             aria-describedby={passwordError ? 'password-error' : undefined}
           />
         </label>
-        {passwordError && <p id="password-error">{signUpErrorMessages[passwordError]}</p>}
-        {generalSignUpError && <p role="alert">{signUpErrorMessages[generalSignUpError]}</p>}
-        <button type="submit" disabled={signingUp}>
+        {passwordError && <ErrorMessage id="password-error">{signUpErrorMessages[passwordError]}</ErrorMessage>}
+        {generalSignUpError && <ErrorMessage role="alert">{signUpErrorMessages[generalSignUpError]}</ErrorMessage>}
+        <Button type="submit" variant="outline" size="lg" disabled={signingUp}>
           Crear cuenta
-        </button>
+        </Button>
       </form>
-      {signedUp && <p role="status">Cuenta creada correctamente</p>}
-    </>
+      {signedUp && <SuccessMessage role="status">Cuenta creada correctamente</SuccessMessage>}
+    </div>
   )
 }
 

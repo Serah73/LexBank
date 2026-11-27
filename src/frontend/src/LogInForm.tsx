@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { ErrorMessage } from './Message'
 import { logInErrorMessages } from './messages'
 import type { LogInError } from './messages'
 
@@ -33,17 +36,24 @@ function LogInForm({ onLoggedIn }: { onLoggedIn: () => void }) {
   }
 
   return (
-    <form aria-label="Iniciar sesión" onSubmit={handleLogIn} noValidate>
-      <label>
+    <form
+      aria-label="Iniciar sesión"
+      onSubmit={handleLogIn}
+      noValidate
+      className="flex flex-col gap-4 rounded-xl border bg-card p-6"
+    >
+      <label className="flex flex-col gap-1 text-sm font-medium">
         Correo electrónico
-        <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+        <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
       </label>
-      <label>
+      <label className="flex flex-col gap-1 text-sm font-medium">
         Contraseña
-        <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+        <Input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
       </label>
-      {logInError && <p role="alert">{logInErrorMessages[logInError]}</p>}
-      <button type="submit">Iniciar sesión</button>
+      {logInError && <ErrorMessage role="alert">{logInErrorMessages[logInError]}</ErrorMessage>}
+      <Button type="submit" size="lg">
+        Iniciar sesión
+      </Button>
     </form>
   )
 }
