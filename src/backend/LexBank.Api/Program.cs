@@ -56,7 +56,18 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     scope.ServiceProvider.GetRequiredService<LexBankDbContext>().Database.Migrate();
-    await scope.ServiceProvider.GetRequiredService<SignUp>().ExecuteAsync("a@a.com", "12345678");
+    // A ready-to-use account for development only: its password is public in the repository.
+    if (app.Environment.IsDevelopment())
+    {
+        try
+        {
+            await scope.ServiceProvider.GetRequiredService<SignUp>().ExecuteAsync("a@a.com", "12345678");
+        }
+        catch (EmailAlreadyRegisteredException)
+        {
+            // Created on a previous start.
+        }
+    }
 }
 
 if (app.Environment.IsDevelopment())
