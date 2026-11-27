@@ -1,15 +1,13 @@
 import { useNavigate } from 'react-router'
+import AuthLayout from './AuthLayout'
 import LogInForm from './LogInForm'
-import SignUpForm from './SignUpForm'
 
 function LogInPage() {
   const navigate = useNavigate()
   return (
-    <main>
-      <h1>LexBank</h1>
-      <SignUpForm />
+    <AuthLayout link={{ question: '¿No tienes cuenta?', text: 'Crear cuenta', to: '/signup' }}>
       <LogInForm onLoggedIn={() => navigate('/transactions')} />
-    </main>
+    </AuthLayout>
   )
 }
 

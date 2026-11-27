@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { Card } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { ErrorMessage } from './Message'
 import { categoryNames, describeRule, rulesLoadErrorMessages } from './messages'
 import type { Rule, RulesLoadError } from './messages'
 
@@ -25,26 +28,28 @@ function RulesPage() {
   }, [navigate])
 
   return (
-    <main>
-      <h1>Reglas</h1>
-      {error && <p role="alert">{rulesLoadErrorMessages[error]}</p>}
+    <main className="flex flex-col gap-4">
+      <h1 className="text-2xl font-semibold">Reglas</h1>
+      {error && <ErrorMessage role="alert">{rulesLoadErrorMessages[error]}</ErrorMessage>}
       {rules.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th>Regla</th>
-              <th>Categoría</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rules.map((rule, index) => (
-              <tr key={index}>
-                <td>{describeRule(rule)}</td>
-                <td>{categoryNames[rule.category]}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Card className="py-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Regla</TableHead>
+                <TableHead>Categoría</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rules.map((rule, index) => (
+                <TableRow key={index}>
+                  <TableCell className="whitespace-normal">{describeRule(rule)}</TableCell>
+                  <TableCell>{categoryNames[rule.category]}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </main>
   )

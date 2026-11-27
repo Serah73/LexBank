@@ -5,6 +5,7 @@ import App from './App'
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  vi.unstubAllEnvs()
   window.history.pushState({}, '', '/')
 })
 
@@ -31,7 +32,9 @@ function stubApi(upload: () => Promise<Response>, stored: unknown[] = []) {
   )
 }
 
+// Opens the sign-up page and answers its request.
 function stubSignUp(signUp: () => Promise<Response>) {
+  window.history.pushState({}, '', '/signup')
   const fetchMock = vi.fn((url: string, _init?: RequestInit) =>
     url === '/api/users' ? signUp() : Promise.resolve(new Response(null, { status: 401 })),
   )
@@ -67,6 +70,65 @@ it('lands on the log-in page when opening a page without a session', async () =>
   render(<App />)
 
   await screen.findByRole('form', { name: 'Iniciar sesión' })
+  expect(window.location.pathname).toBe('/login')
+})
+
+it('shows only the log-in form with a link to create an account', async () => {
+  window.history.pushState({}, '', '/login')
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 401 })))
+
+  render(<App />)
+
+  await screen.findByRole('form', { name: 'Iniciar sesión' })
+  expect(screen.queryByRole('form', { name: 'Crear cuenta' })).toBeNull()
+  expect(screen.getByRole('link', { name: 'Crear cuenta' }).getAttribute('href')).toBe('/signup')
+})
+
+it('prefills the log-in form with the development account in development', async () => {
+  vi.stubEnv('MODE', 'development')
+  window.history.pushState({}, '', '/login')
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 401 })))
+
+  render(<App />)
+
+  const form = within(await screen.findByRole('form', { name: 'Iniciar sesión' }))
+  expect((form.getByLabelText('Correo electrónico') as HTMLInputElement).value).toBe('a@a.com')
+  expect((form.getByLabelText('Contraseña') as HTMLInputElement).value).toBe('12345678')
+})
+
+it('leaves the log-in form empty outside development', async () => {
+  vi.stubEnv('MODE', 'production')
+  window.history.pushState({}, '', '/login')
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 401 })))
+
+  render(<App />)
+
+  const form = within(await screen.findByRole('form', { name: 'Iniciar sesión' }))
+  expect((form.getByLabelText('Correo electrónico') as HTMLInputElement).value).toBe('')
+  expect((form.getByLabelText('Contraseña') as HTMLInputElement).value).toBe('')
+})
+
+it('opens the sign-up page from the log-in page', async () => {
+  window.history.pushState({}, '', '/login')
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 401 })))
+  render(<App />)
+
+  fireEvent.click(await screen.findByRole('link', { name: 'Crear cuenta' }))
+
+  await screen.findByRole('form', { name: 'Crear cuenta' })
+  expect(screen.queryByRole('form', { name: 'Iniciar sesión' })).toBeNull()
+  expect(window.location.pathname).toBe('/signup')
+})
+
+it('goes back to the log-in page from the sign-up page', async () => {
+  window.history.pushState({}, '', '/signup')
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 401 })))
+  render(<App />)
+
+  fireEvent.click(await screen.findByRole('link', { name: 'Iniciar sesión' }))
+
+  await screen.findByRole('form', { name: 'Iniciar sesión' })
+  expect(screen.queryByRole('form', { name: 'Crear cuenta' })).toBeNull()
   expect(window.location.pathname).toBe('/login')
 })
 
@@ -529,7 +591,40 @@ it('shows the stored transactions when the page loads', async () => {
 
   await screen.findByRole('table')
   const cells = cellTexts()
-  expect(cells).toEqual(['2025-01-10', 'COMPRA', '-23.45', '1000', 'Ruralvía', 'Sin categoría', ''])
+  expect(cells).toEqual(['10/01/2025', 'COMPRA', '-23,45\u00a0€', '1000,00\u00a0€', 'Ruralvía', 'Sin categoría', ''])
+})
+
+it('shows dates and amounts of the transactions in Spanish format', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(
+      Response.json([
+        { date: '2025-03-04', description: 'ALQUILER', amount: -1234567.5, balance: 12.3, bank: 'Ruralvia', category: 'Home', rule: null },
+      ]),
+    ),
+  )
+
+  render(<App />)
+
+  await screen.findByRole('table')
+  // Intl separates the amount and the euro sign with a non-breaking space.
+  expect(cellTexts().slice(0, 4)).toEqual(['04/03/2025', 'ALQUILER', '-1.234.567,50\u00a0€', '12,30\u00a0€'])
+})
+
+it('shows income with a plus sign so it does not rely on color', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(
+      Response.json([
+        { date: '2025-03-05', description: 'NOMINA', amount: 1500, balance: 2500, bank: 'Ruralvia', category: 'Salary', rule: null },
+      ]),
+    ),
+  )
+
+  render(<App />)
+
+  await screen.findByRole('table')
+  expect(cellTexts().slice(2, 4)).toEqual(['+1500,00\u00a0€', '2500,00\u00a0€'])
 })
 
 it('does not replace an uploaded statement with a late response to the initial load', async () => {
@@ -559,10 +654,10 @@ it('does not replace an uploaded statement with a late response to the initial l
   await new Promise((resolve) => setTimeout(resolve, 0))
 
   expect(cellTexts()).toEqual([
-    '2025-01-10',
+    '10/01/2025',
     'COMPRA',
-    '-23.45',
-    '1000',
+    '-23,45\u00a0€',
+    '1000,00\u00a0€',
     'Ruralvía',
     'Sin categoría',
     '',

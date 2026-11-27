@@ -64,6 +64,17 @@ it('goes between the transactions and the rules pages with the links of the layo
   expect(window.location.pathname).toBe('/transactions')
 })
 
+it('marks the current section in the side navigation', async () => {
+  window.history.pushState({}, '', '/rules')
+  stubRules([])
+
+  render(<App />)
+
+  const current = await screen.findByRole('link', { name: 'Reglas' })
+  expect(current.getAttribute('aria-current')).toBe('page')
+  expect(screen.getByRole('link', { name: 'Movimientos' }).getAttribute('aria-current')).toBeNull()
+})
+
 it('lands on the log-in page after logging out from the rules page', async () => {
   window.history.pushState({}, '', '/rules')
   const fetchMock = vi.fn((url: string, init?: RequestInit) =>

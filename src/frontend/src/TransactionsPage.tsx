@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { useNavigate } from 'react-router'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { formatAmount, formatDate, formatMovement } from './format'
 import { applyRulesErrorMessages, bankNames, categoryNames, correctionErrorMessages, describeAccuracy, describeAppliedRules, describeHits, describeRule,failedRowMessages, statementErrorMessages } from './messages'
 import type { ApplyRulesError, Bank, Category, CorrectionError, FailedRowReason, Rule, StatementError } from './messages'
+import { ErrorMessage, SuccessMessage } from './Message'
 import RuleOfferForm from './RuleOfferForm'
 import type { RuleOffer } from './RuleOfferForm'
 
@@ -53,23 +59,23 @@ async function fetchAccuracy(): Promise<Accuracy | null> {
 
 function BankAccuracyTable({ banks }: { banks: NonNullable<Accuracy['byBank']> }) {
   return (
-    <table>
-      <caption>Por banco</caption>
-      <thead>
-        <tr>
-          <th>Banco</th>
-          <th>Aciertos</th>
-        </tr>
-      </thead>
-      <tbody>
+    <Table>
+      <TableCaption className="mt-0 mb-2 [caption-side:top] text-left">Por banco</TableCaption>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Banco</TableHead>
+          <TableHead className="text-right">Aciertos</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {banks.map((group) => (
-          <tr key={group.bank}>
-            <td>{bankNames[group.bank]}</td>
-            <td>{describeHits(group.hits, group.total)}</td>
-          </tr>
+          <TableRow key={group.bank}>
+            <TableCell>{bankNames[group.bank]}</TableCell>
+            <TableCell className="text-right tabular-nums">{describeHits(group.hits, group.total)}</TableCell>
+          </TableRow>
         ))}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   )
 }
 
@@ -202,73 +208,96 @@ function TransactionsPage() {
   }
 
   return (
-    <main>
-      <h1>LexBank</h1>
-      <input type="file" accept=".xlsx,.csv" onChange={handleFileChange} />
-      <button type="button" onClick={handleApplyRules}>
-        Aplicar reglas
-      </button>
-      {applied !== null && <p role="status">{describeAppliedRules(applied)}</p>}
-      {applyError && <p role="alert">{applyRulesErrorMessages[applyError]}</p>}
-      {error && <p role="alert">{statementErrorMessages[error]}</p>}
-      {correctionError && <p role="alert">{correctionErrorMessages[correctionError]}</p>}
-      {offer && <RuleOfferForm key={`${offer.id}-${offer.category}`} offer={offer} onClose={() => setOffer(null)} />}
-      {skipped > 0 && <p>Movimientos omitidos por estar ya importados: {skipped}</p>}
+    // The bottom space lets the last rows be scrolled above the floating panel.
+    <main className={`flex flex-col gap-4 ${correctionError || offer ? 'pb-80' : ''}`}>
+      <h1 className="text-2xl font-semibold">Movimientos</h1>
+      <div className="flex items-center gap-3">
+        <Input type="file" accept=".xlsx,.csv" onChange={handleFileChange} className="h-9 w-80" />
+        <Button size="lg" onClick={handleApplyRules}>
+          Aplicar reglas
+        </Button>
+      </div>
+      {applied !== null && <SuccessMessage role="status">{describeAppliedRules(applied)}</SuccessMessage>}
+      {applyError && <ErrorMessage role="alert">{applyRulesErrorMessages[applyError]}</ErrorMessage>}
+      {error && <ErrorMessage role="alert">{statementErrorMessages[error]}</ErrorMessage>}
+      {skipped > 0 && (
+        <p className="text-sm text-muted-foreground">Movimientos omitidos por estar ya importados: {skipped}</p>
+      )}
+      {/* Floating: the answer to a correction is in view from any row, without blocking the page. */}
+      {(correctionError || offer) && (
+        <div className="fixed right-6 bottom-6 z-10 w-96 rounded-xl border border-tint bg-card p-4 shadow-2xl">
+          {correctionError && <ErrorMessage role="alert">{correctionErrorMessages[correctionError]}</ErrorMessage>}
+          {offer && <RuleOfferForm key={`${offer.id}-${offer.category}`} offer={offer} onClose={() => setOffer(null)} />}
+        </div>
+      )}
       {accuracy && accuracy.total > 0 && (
-        <>
-          <p>{describeAccuracy(accuracy.hits, accuracy.total)}</p>
-          {Array.isArray(accuracy.byBank) && <BankAccuracyTable banks={accuracy.byBank} />}
-        </>
+        <Card className="w-full max-w-md">
+          <CardContent className="flex flex-col gap-4">
+            <p className="text-base font-medium">{describeAccuracy(accuracy.hits, accuracy.total)}</p>
+            {Array.isArray(accuracy.byBank) && <BankAccuracyTable banks={accuracy.byBank} />}
+          </CardContent>
+        </Card>
       )}
       {transactions.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Descripción</th>
-              <th>Importe</th>
-              <th>Saldo</th>
-              <th>Banco</th>
-              <th>Categoría</th>
-              <th>Regla</th>
-            </tr>
-          </thead>
-          <tbody>
-            {transactions.map((t, index) => (
-              <tr key={index}>
-                <td>{t.date}</td>
-                <td>{t.description}</td>
-                <td>{t.amount}</td>
-                <td>{t.balance}</td>
-                <td>{bankNames[t.bank]}</td>
-                <td>
-                  <select aria-label={`Categoría de ${t.description}`} value={t.category}
-                    onChange={(event) => handleCategoryChange(t.id, event.target.value as Category)}
-                  >
-                    {(Object.keys(categoryNames) as Category[]).map((category) => (
-                      <option key={category} value={category}>
-                        {categoryNames[category]}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td>{t.corrected ? 'Corregida por ti' : t.rule && describeRule(t.rule)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Card className="overflow-visible py-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Fecha</TableHead>
+                <TableHead>Descripción</TableHead>
+                <TableHead className="text-right">Importe</TableHead>
+                <TableHead className="text-right">Saldo</TableHead>
+                <TableHead>Banco</TableHead>
+                <TableHead>Categoría</TableHead>
+                <TableHead>Regla</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {transactions.map((t, index) => (
+                <TableRow key={index}>
+                  <TableCell className="tabular-nums">{formatDate(t.date)}</TableCell>
+                  <TableCell className="whitespace-normal">{t.description}</TableCell>
+                  <TableCell className={`text-right font-medium tabular-nums ${t.amount > 0 ? 'text-income' : ''}`}>
+                    {formatMovement(t.amount)}
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground tabular-nums">{formatAmount(t.balance)}</TableCell>
+                  <TableCell>{bankNames[t.bank]}</TableCell>
+                  <TableCell>
+                    <select aria-label={`Categoría de ${t.description}`} value={t.category}
+                      onChange={(event) => handleCategoryChange(t.id, event.target.value as Category)}
+                      className="h-8 w-44 rounded-lg border border-input bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                    >
+                      {(Object.keys(categoryNames) as Category[]).map((category) => (
+                        <option key={category} value={category}>
+                          {categoryNames[category]}
+                        </option>
+                      ))}
+                    </select>
+                  </TableCell>
+                  <TableCell className="text-xs whitespace-normal text-muted-foreground">
+                    {t.corrected ? 'Corregida por ti' : t.rule && describeRule(t.rule)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       )}
       {failedRows.length > 0 && (
-        <section>
-          <h2>Filas que no se pudieron leer</h2>
-          <ul>
-            {failedRows.map((row) => (
-              <li key={row.rowNumber}>
-                Fila {row.rowNumber}: {failedRowMessages[row.reason]}
-              </li>
-            ))}
-          </ul>
-        </section>
+        <Card>
+          <CardContent>
+            <section>
+              <h2 className="mb-2 font-medium text-destructive">Filas que no se pudieron leer</h2>
+              <ul className="list-inside list-disc text-sm">
+                {failedRows.map((row) => (
+                  <li key={row.rowNumber}>
+                    Fila {row.rowNumber}: {failedRowMessages[row.reason]}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </CardContent>
+        </Card>
       )}
     </main>
   )

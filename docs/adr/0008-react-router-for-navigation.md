@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-25
+- Note (2026-11-27): the sign-up form later moved to its own page, `/signup`, linked with `/login`. The decision below is unchanged.
 
 ## Context
 

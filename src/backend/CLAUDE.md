@@ -46,7 +46,7 @@ Run from the repository root.
 
 - xUnit. Test names follow `Method_Scenario_ExpectedResult`.
 - Database tests run against real SQL Server LocalDB, never the EF in-memory provider (ADR-0006). Each test creates its own database with a unique name and drops it on dispose; follow `LexBankApiFactory` and `EfTransactionRepositoryTests`.
-- API tests use `LexBankApiFactory` (`WebApplicationFactory<Program>`). To control what the reader returns, register `StubStatementReader` with `WithWebHostBuilder`, after `RemoveAll<IStatementReader>()`; otherwise the real reader for that extension wins.
+- API tests use `LexBankApiFactory` (`WebApplicationFactory<Program>`), which runs in the `Testing` environment so that databases start empty; ask for `Development` explicitly to test what only exists there (the `a@a.com` account, Swagger). To control what the reader returns, register `StubStatementReader` with `WithWebHostBuilder`, after `RemoveAll<IStatementReader>()`; otherwise the real reader for that extension wins.
 - Tests of a protected endpoint start with `await client.LogInAsync()` (`HttpClientSessionExtensions`), which signs up and logs in; the client keeps the cookie. Pass another email to get a second user.
 - Statement fixtures live in `tests/backend/LexBank.Infrastructure.Tests/Fixtures`; the Api tests link the same file instead of copying it.
 - `data/` holds real personal bank statements and is git-ignored. Never copy its contents into fixtures, tests, code or documentation.

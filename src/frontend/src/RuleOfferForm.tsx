@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { ErrorMessage } from './Message'
 import { categoryNames, ruleErrorMessages, ruleSignNames } from './messages'
 import type { Category, Rule, RuleError, RuleSign } from './messages'
 
@@ -72,48 +75,50 @@ function RuleOfferForm({ offer, onClose }: { offer: RuleOffer; onClose: () => vo
 
   if (existing)
     return (
-      <form aria-label="Crear regla" noValidate>
+      <form aria-label="Crear regla" noValidate className="flex flex-col gap-3">
         <p>
           Ya existe una regla con ese patrón y ese signo, categorizada como «{categoryNames[existing.category]}». ¿Reemplazar
           su categoría por «{categoryNames[offer.category]}»?
         </p>
-        {generalError && <p role="alert">{ruleErrorMessages[generalError]}</p>}
-        <button type="button" onClick={() => handleReplace(existing)}>
-          Reemplazar
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setExisting(null)
-            setRuleError(null)
-          }}
-        >
-          No reemplazar
-        </button>
+        {generalError && <ErrorMessage role="alert">{ruleErrorMessages[generalError]}</ErrorMessage>}
+        <div className="flex gap-2">
+          <Button onClick={() => handleReplace(existing)}>Reemplazar</Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setExisting(null)
+              setRuleError(null)
+            }}
+          >
+            No reemplazar
+          </Button>
+        </div>
       </form>
     )
 
   return (
-    <form aria-label="Crear regla" onSubmit={handleSubmit} noValidate>
+    <form aria-label="Crear regla" onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
       <p>
         ¿Categorizar como «{categoryNames[offer.category]}» los movimientos de tipo «{ruleSignNames[offer.sign]}» que
         coincidan con este patrón?
       </p>
-      <label>
+      <label className="flex max-w-md flex-col gap-1 text-sm font-medium">
         Patrón
-        <input
+        <Input
           value={pattern}
           onChange={(event) => setPattern(event.target.value)}
           aria-invalid={patternError !== null}
           aria-describedby={patternError ? 'pattern-error' : undefined}
         />
       </label>
-      {patternError && <p id="pattern-error">{ruleErrorMessages[patternError]}</p>}
-      {generalError && <p role="alert">{ruleErrorMessages[generalError]}</p>}
-      <button type="submit">Crear regla</button>
-      <button type="button" onClick={onClose}>
-        Ahora no
-      </button>
+      {patternError && <ErrorMessage id="pattern-error">{ruleErrorMessages[patternError]}</ErrorMessage>}
+      {generalError && <ErrorMessage role="alert">{ruleErrorMessages[generalError]}</ErrorMessage>}
+      <div className="flex gap-2">
+        <Button type="submit">Crear regla</Button>
+        <Button variant="outline" onClick={onClose}>
+          Ahora no
+        </Button>
+      </div>
     </form>
   )
 }
