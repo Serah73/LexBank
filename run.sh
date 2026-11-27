@@ -9,4 +9,5 @@ npm --prefix src/frontend install || exit 1
 trap 'kill 0' EXIT
 
 dotnet run --project src/backend/LexBank.Api --launch-profile http &
-npm --prefix src/frontend run dev
+# Vite opens the browser once it is ready. Without MSYS_NO_PATHCONV, Git Bash turns /login into a Windows path.
+MSYS_NO_PATHCONV=1 npm --prefix src/frontend run dev -- --open /login
