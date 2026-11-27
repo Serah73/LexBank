@@ -1,4 +1,4 @@
-import { Link, Outlet, useNavigate } from 'react-router'
+import { NavLink, Outlet, useNavigate } from 'react-router'
 
 function Layout() {
   const navigate = useNavigate()
@@ -11,8 +11,8 @@ function Layout() {
   return (
     <>
       <nav>
-        <Link to="/transactions">Movimientos</Link>
-        <Link to="/rules">Reglas</Link>
+        <NavLink to="/transactions">Movimientos</NavLink>
+        <NavLink to="/rules">Reglas</NavLink>
         <button type="button" onClick={handleLogOut}>
           Cerrar sesión
         </button>
