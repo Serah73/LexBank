@@ -31,7 +31,9 @@ function stubApi(upload: () => Promise<Response>, stored: unknown[] = []) {
   )
 }
 
+// Opens the sign-up page and answers its request.
 function stubSignUp(signUp: () => Promise<Response>) {
+  window.history.pushState({}, '', '/signup')
   const fetchMock = vi.fn((url: string, _init?: RequestInit) =>
     url === '/api/users' ? signUp() : Promise.resolve(new Response(null, { status: 401 })),
   )
@@ -67,6 +69,41 @@ it('lands on the log-in page when opening a page without a session', async () =>
   render(<App />)
 
   await screen.findByRole('form', { name: 'Iniciar sesión' })
+  expect(window.location.pathname).toBe('/login')
+})
+
+it('shows only the log-in form with a link to create an account', async () => {
+  window.history.pushState({}, '', '/login')
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 401 })))
+
+  render(<App />)
+
+  await screen.findByRole('form', { name: 'Iniciar sesión' })
+  expect(screen.queryByRole('form', { name: 'Crear cuenta' })).toBeNull()
+  expect(screen.getByRole('link', { name: 'Crear cuenta' }).getAttribute('href')).toBe('/signup')
+})
+
+it('opens the sign-up page from the log-in page', async () => {
+  window.history.pushState({}, '', '/login')
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 401 })))
+  render(<App />)
+
+  fireEvent.click(await screen.findByRole('link', { name: 'Crear cuenta' }))
+
+  await screen.findByRole('form', { name: 'Crear cuenta' })
+  expect(screen.queryByRole('form', { name: 'Iniciar sesión' })).toBeNull()
+  expect(window.location.pathname).toBe('/signup')
+})
+
+it('goes back to the log-in page from the sign-up page', async () => {
+  window.history.pushState({}, '', '/signup')
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 401 })))
+  render(<App />)
+
+  fireEvent.click(await screen.findByRole('link', { name: 'Iniciar sesión' }))
+
+  await screen.findByRole('form', { name: 'Iniciar sesión' })
+  expect(screen.queryByRole('form', { name: 'Crear cuenta' })).toBeNull()
   expect(window.location.pathname).toBe('/login')
 })
 

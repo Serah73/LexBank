@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import Layout from './Layout'
 import LogInPage from './LogInPage'
 import RulesPage from './RulesPage'
+import SignUpPage from './SignUpPage'
 import TransactionsPage from './TransactionsPage'
 
 function App() {
@@ -9,6 +10,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LogInPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
         <Route element={<Layout />}>
           <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/rules" element={<RulesPage />} />
