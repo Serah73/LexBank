@@ -11,7 +11,7 @@ It is intended for family use, run locally, not as a public service.
 ## Stack
 
 - Backend: ASP.NET Core 8, EF Core, SQL Server, REST API.
-- Frontend: React + TypeScript (Vite, Vitest, React Router). Planned, not installed yet: shadcn/ui, Tailwind CSS, Recharts.
+- Frontend: React + TypeScript (Vite, Vitest, React Router, Tailwind CSS, shadcn/ui). Planned, not installed yet: Recharts.
 - Practices: Clean Architecture (Domain, Application, Infrastructure, Api), TDD, ADRs under `docs/adr`, monorepo.
 
 ## Expensive decisions
@@ -52,6 +52,6 @@ Run from the repository root (single solution, `LexBank.sln`):
 
 - `dotnet build`
 - `dotnet test`
-- `./run.sh` (Git Bash): starts the API and the frontend together; Ctrl+C stops both
+- `./run.sh` (Git Bash): installs the frontend dependencies, starts the API and the frontend together and opens the browser; Ctrl+C stops both
 
 Area-specific commands and conventions are in `src/backend/CLAUDE.md` and `src/frontend/CLAUDE.md`.

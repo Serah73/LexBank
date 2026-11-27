@@ -68,6 +68,8 @@ dotnet run --project src/backend/LexBank.Api --launch-profile http
 
 The API listens on `http://localhost:5236`. On startup it applies the pending EF Core migrations, so the database is created automatically if it does not exist.
 
+In the development environment only, the API also creates on startup, if it does not exist, a ready-to-use account: `a@a.com` with the password `12345678`. Since the password is public, the development environment must not be exposed to other machines.
+
 ## Where the data is stored
 
 In development the API uses **SQL Server LocalDB**, not a full SQL Server or SQL Express instance. The connection string is in `LexBank.Api/appsettings.Development.json`:

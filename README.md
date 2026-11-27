@@ -65,8 +65,8 @@ flowchart LR
 | Area | Technologies |
 |---|---|
 | Backend | ASP.NET Core 8, EF Core 8, SQL Server, ClosedXML |
-| Frontend | React 19, TypeScript, Vite, React Router |
-| Frontend (planned) | shadcn/ui, Tailwind CSS, Recharts |
+| Frontend | React 19, TypeScript, Vite, React Router, Tailwind CSS, shadcn/ui |
+| Frontend (planned) | Recharts |
 | Testing | xUnit (backend), Vitest and React Testing Library (frontend) |
 | Tooling | GitHub Actions, oxlint |
 
@@ -95,7 +95,7 @@ npm install
 npm run dev
 ```
 
-From Git Bash, `./run.sh` starts both in a single terminal.
+From Git Bash, `./run.sh` installs the frontend dependencies, starts both in a single terminal and opens the application in the browser.
 
 Detailed instructions for each part:
 
@@ -122,6 +122,7 @@ Detailed instructions for each part:
 | [0006](docs/adr/0006-localdb-for-database-tests.md) | Test the database layer against SQL Server LocalDB |
 | [0007](docs/adr/0007-cookie-authentication.md) | Cookie authentication |
 | [0008](docs/adr/0008-react-router-for-navigation.md) | Use React Router for navigation |
+| [0009](docs/adr/0009-tailwind-and-shadcn-for-styling.md) | Use Tailwind CSS and shadcn/ui for styling |
 
 ## Project status
 
@@ -150,7 +151,8 @@ The project is under active development.
 | Accuracy measurement of the categorization engine, overall and by bank | Implemented |
 | Spending charts | Planned |
 | Spanish and English user interface | Planned (Spanish only for now) |
-| Visual design with light and dark themes | Planned |
+| Desktop visual design with a dark theme | Implemented |
+| Light theme and theme switch | Planned |
 
 ## License
 

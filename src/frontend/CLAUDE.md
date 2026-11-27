@@ -10,17 +10,22 @@ Run from `src/frontend`.
 - Tests (single run): `npm test`
 - One test: `npx vitest run -t "<test name>"`
 - Lint: `npm run lint` (oxlint)
+- Verify before finishing: `npm run check` (lint, tests, build)
 - Type-check and build: `npm run build`
 - Development server: `npm run dev` (proxies `/api` to the backend on `http://localhost:5236`, which must be running)
 
 ## Current state
 
-- React 19, TypeScript, Vite, Vitest. React Router (ADR-0008): `src/App.tsx` only holds the routes `/login` (`LogInPage`), `/transactions` (`TransactionsPage`) and `/rules` (`RulesPage`); the last two share `Layout` (links and log-out).
-- No styles, no state library, no i18n library.
-- shadcn/ui, Tailwind CSS and Recharts are the planned stack but are **not installed**. Do not add them, or any other package, until the story that needs them.
+- React 19, TypeScript, Vite, Vitest. React Router (ADR-0008): `src/App.tsx` only holds the routes `/login`, `/signup` (both framed by `AuthLayout`), `/transactions` and `/rules`; the last two share `Layout` (side navigation and log-out).
+- Tailwind CSS and shadcn/ui on Base UI (ADR-0009); `@/` points to `src/`. No state library, no i18n library. Desktop only, dark only.
+- Recharts is planned but **not installed**. Do not add it, or any other package, until the story that needs it.
 
 ## Conventions
 
+- **Colors:** defined only in `src/index.css`; use the token classes (`text-income`, `bg-card`), never color values. `public/lexbank_icon_light.svg` carries its own: change it with the palette.
+- **Components:** add a shadcn component only when it is used (`npx shadcn@latest add <name>`); never run `shadcn init`, it would overwrite the palette. Show errors and successes with `ErrorMessage` and `SuccessMessage` (`Message.tsx`).
+- **Formats:** dates and amounts go through `format.ts`; `Intl` puts a non-breaking space (`\u00a0`) before `€`.
+- **Development account:** `LogInForm` is prefilled when `import.meta.env.MODE === 'development'`; not `DEV`, which is also true under Vitest.
 - **API codes:** the API returns stable codes, never text. Map every code to its message in `src/messages.ts`; never render a raw code. An unknown error code falls back to `ProcessingFailed`.
 - **Form errors:** show each error under its own field (`aria-invalid` + `aria-describedby`), not as a loose notice; `role="alert"` is only for the generic error. `SignUpFailed`, `LogInFailed`, `CorrectionFailed`, `ApplyRulesFailed`, `ReloadFailed`, `RulesLoadFailed`, `RuleCreationFailed` and `RuleUpdateFailed` exist only in the frontend (network failure or unreadable response), not in the API. `CorrectionFailed` is a general `role="alert"`: the row goes back to its previous category. The log-in error is a general `role="alert"`, not tied to a field, so it does not reveal which of the two was wrong.
 - **Session:** there is no session state. A page that needs one redirects to `/login` (`navigate(..., { replace: true })`) when its first request answers `401`; only an explicit `401` does it. After logging in the user always goes to `/transactions`. A test that needs the signed-out view stubs the requests with `401`; the two forms share labels, so query them inside `within(screen.getByRole('form', { name: ... }))`.
