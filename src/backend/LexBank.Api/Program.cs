@@ -56,6 +56,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     scope.ServiceProvider.GetRequiredService<LexBankDbContext>().Database.Migrate();
+    await scope.ServiceProvider.GetRequiredService<SignUp>().ExecuteAsync("a@a.com", "12345678");
 }
 
 if (app.Environment.IsDevelopment())
