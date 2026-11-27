@@ -26,5 +26,5 @@
 ## Consequences
 
 - **Positive:** changing the palette means editing one file; a light theme only needs another set of values for the same variables; the component code can be changed freely.
-- **Negative:** several new dependencies (`tailwindcss`, `@tailwindcss/vite`, `@base-ui/react`, `class-variance-authority` and `cn`), and long class lists in the markup.
+- **Negative:** several new dependencies (`tailwindcss`, `@tailwindcss/vite`, `@base-ui/react`, `class-variance-authority`, `cn` and `lucide-react` for the icons), and long class lists in the markup.
 - Updates to the copied components are not automatic: they have to be applied by hand.
