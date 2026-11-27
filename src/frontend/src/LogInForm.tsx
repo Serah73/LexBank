@@ -7,8 +7,9 @@ import { logInErrorMessages } from './messages'
 import type { LogInError } from './messages'
 
 function LogInForm({ onLoggedIn }: { onLoggedIn: () => void }) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  // In development only, prefilled with the account the API creates, to log in with one click.
+  const [email, setEmail] = useState(import.meta.env.MODE === 'development' ? 'a@a.com' : '')
+  const [password, setPassword] = useState(import.meta.env.MODE === 'development' ? '12345678' : '')
   const [logInError, setLogInError] = useState<LogInError | null>(null)
 
   async function handleLogIn(event: FormEvent<HTMLFormElement>) {

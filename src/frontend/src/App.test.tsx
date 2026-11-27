@@ -5,6 +5,7 @@ import App from './App'
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  vi.unstubAllEnvs()
   window.history.pushState({}, '', '/')
 })
 
@@ -81,6 +82,30 @@ it('shows only the log-in form with a link to create an account', async () => {
   await screen.findByRole('form', { name: 'Iniciar sesión' })
   expect(screen.queryByRole('form', { name: 'Crear cuenta' })).toBeNull()
   expect(screen.getByRole('link', { name: 'Crear cuenta' }).getAttribute('href')).toBe('/signup')
+})
+
+it('prefills the log-in form with the development account in development', async () => {
+  vi.stubEnv('MODE', 'development')
+  window.history.pushState({}, '', '/login')
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 401 })))
+
+  render(<App />)
+
+  const form = within(await screen.findByRole('form', { name: 'Iniciar sesión' }))
+  expect((form.getByLabelText('Correo electrónico') as HTMLInputElement).value).toBe('a@a.com')
+  expect((form.getByLabelText('Contraseña') as HTMLInputElement).value).toBe('12345678')
+})
+
+it('leaves the log-in form empty outside development', async () => {
+  vi.stubEnv('MODE', 'production')
+  window.history.pushState({}, '', '/login')
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 401 })))
+
+  render(<App />)
+
+  const form = within(await screen.findByRole('form', { name: 'Iniciar sesión' }))
+  expect((form.getByLabelText('Correo electrónico') as HTMLInputElement).value).toBe('')
+  expect((form.getByLabelText('Contraseña') as HTMLInputElement).value).toBe('')
 })
 
 it('opens the sign-up page from the log-in page', async () => {
