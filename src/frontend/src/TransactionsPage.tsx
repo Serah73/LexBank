@@ -208,7 +208,8 @@ function TransactionsPage() {
   }
 
   return (
-    <main className="flex flex-col gap-4">
+    // The bottom space lets the last rows be scrolled above the floating panel.
+    <main className={`flex flex-col gap-4 ${correctionError || offer ? 'pb-80' : ''}`}>
       <h1 className="text-2xl font-semibold">Movimientos</h1>
       <div className="flex items-center gap-3">
         <Input type="file" accept=".xlsx,.csv" onChange={handleFileChange} className="h-9 w-80" />
@@ -222,9 +223,9 @@ function TransactionsPage() {
       {skipped > 0 && (
         <p className="text-sm text-muted-foreground">Movimientos omitidos por estar ya importados: {skipped}</p>
       )}
-      {/* Sticky: the answer to a correction stays in view even when the corrected row is far down the table. */}
+      {/* Floating: the answer to a correction is in view from any row, without blocking the page. */}
       {(correctionError || offer) && (
-        <div className="sticky top-4 z-10 rounded-xl border border-tint bg-card p-4 shadow-lg">
+        <div className="fixed right-6 bottom-6 z-10 w-96 rounded-xl border border-tint bg-card p-4 shadow-2xl">
           {correctionError && <ErrorMessage role="alert">{correctionErrorMessages[correctionError]}</ErrorMessage>}
           {offer && <RuleOfferForm key={`${offer.id}-${offer.category}`} offer={offer} onClose={() => setOffer(null)} />}
         </div>
