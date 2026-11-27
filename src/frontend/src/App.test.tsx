@@ -549,6 +549,22 @@ it('shows dates and amounts of the transactions in Spanish format', async () => 
   expect(cellTexts().slice(0, 4)).toEqual(['04/03/2025', 'ALQUILER', '-1.234.567,50\u00a0€', '12,30\u00a0€'])
 })
 
+it('shows income with a plus sign so it does not rely on color', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(
+      Response.json([
+        { date: '2025-03-05', description: 'NOMINA', amount: 1500, balance: 2500, bank: 'Ruralvia', category: 'Salary', rule: null },
+      ]),
+    ),
+  )
+
+  render(<App />)
+
+  await screen.findByRole('table')
+  expect(cellTexts().slice(2, 4)).toEqual(['+1500,00\u00a0€', '2500,00\u00a0€'])
+})
+
 it('does not replace an uploaded statement with a late response to the initial load', async () => {
   let resolveStored!: (response: Response) => void
   vi.stubGlobal(

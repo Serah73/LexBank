@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { useNavigate } from 'react-router'
-import { formatAmount, formatDate } from './format'
+import { formatAmount, formatDate, formatMovement } from './format'
 import { applyRulesErrorMessages, bankNames, categoryNames, correctionErrorMessages, describeAccuracy, describeAppliedRules, describeHits, describeRule,failedRowMessages, statementErrorMessages } from './messages'
 import type { ApplyRulesError, Bank, Category, CorrectionError, FailedRowReason, Rule, StatementError } from './messages'
 import RuleOfferForm from './RuleOfferForm'
@@ -239,7 +239,7 @@ function TransactionsPage() {
               <tr key={index}>
                 <td>{formatDate(t.date)}</td>
                 <td>{t.description}</td>
-                <td>{formatAmount(t.amount)}</td>
+                <td className={t.amount > 0 ? 'text-income' : undefined}>{formatMovement(t.amount)}</td>
                 <td>{formatAmount(t.balance)}</td>
                 <td>{bankNames[t.bank]}</td>
                 <td>
