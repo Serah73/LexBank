@@ -529,7 +529,24 @@ it('shows the stored transactions when the page loads', async () => {
 
   await screen.findByRole('table')
   const cells = cellTexts()
-  expect(cells).toEqual(['2025-01-10', 'COMPRA', '-23.45', '1000', 'Ruralvía', 'Sin categoría', ''])
+  expect(cells).toEqual(['10/01/2025', 'COMPRA', '-23,45\u00a0€', '1000,00\u00a0€', 'Ruralvía', 'Sin categoría', ''])
+})
+
+it('shows dates and amounts of the transactions in Spanish format', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(
+      Response.json([
+        { date: '2025-03-04', description: 'ALQUILER', amount: -1234567.5, balance: 12.3, bank: 'Ruralvia', category: 'Home', rule: null },
+      ]),
+    ),
+  )
+
+  render(<App />)
+
+  await screen.findByRole('table')
+  // Intl separates the amount and the euro sign with a non-breaking space.
+  expect(cellTexts().slice(0, 4)).toEqual(['04/03/2025', 'ALQUILER', '-1.234.567,50\u00a0€', '12,30\u00a0€'])
 })
 
 it('does not replace an uploaded statement with a late response to the initial load', async () => {
@@ -559,10 +576,10 @@ it('does not replace an uploaded statement with a late response to the initial l
   await new Promise((resolve) => setTimeout(resolve, 0))
 
   expect(cellTexts()).toEqual([
-    '2025-01-10',
+    '10/01/2025',
     'COMPRA',
-    '-23.45',
-    '1000',
+    '-23,45\u00a0€',
+    '1000,00\u00a0€',
     'Ruralvía',
     'Sin categoría',
     '',

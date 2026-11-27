@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { useNavigate } from 'react-router'
+import { formatAmount, formatDate } from './format'
 import { applyRulesErrorMessages, bankNames, categoryNames, correctionErrorMessages, describeAccuracy, describeAppliedRules, describeHits, describeRule,failedRowMessages, statementErrorMessages } from './messages'
 import type { ApplyRulesError, Bank, Category, CorrectionError, FailedRowReason, Rule, StatementError } from './messages'
 import RuleOfferForm from './RuleOfferForm'
@@ -236,10 +237,10 @@ function TransactionsPage() {
           <tbody>
             {transactions.map((t, index) => (
               <tr key={index}>
-                <td>{t.date}</td>
+                <td>{formatDate(t.date)}</td>
                 <td>{t.description}</td>
-                <td>{t.amount}</td>
-                <td>{t.balance}</td>
+                <td>{formatAmount(t.amount)}</td>
+                <td>{formatAmount(t.balance)}</td>
                 <td>{bankNames[t.bank]}</td>
                 <td>
                   <select aria-label={`Categoría de ${t.description}`} value={t.category}
